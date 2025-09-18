@@ -1,4 +1,4 @@
---===[ FULL UI SYSTEM ]===--
+--===[ UI SYSTEM ]===--
 
 -- GUI
 local a = Instance.new("ScreenGui", game.CoreGui)
