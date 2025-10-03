@@ -1,209 +1,161 @@
---===[ UI SYSTEM ]===--
+--// Tiện Ích 67 - Full Motion Fix 2025 + Meme Text
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 
--- GUI
-local a = Instance.new("ScreenGui", game.CoreGui)
-a.Name = "DiamondFarmUI"
+local player = Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local hum = char:WaitForChild("Humanoid")
+local hrp = char:WaitForChild("HumanoidRootPart")
 
-local main = Instance.new("Frame", a)
-main.Size = UDim2.new(0, 300, 0, 220)
-main.Position = UDim2.new(0, 80, 0, 100)
-main.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-main.BorderSizePixel = 0
-main.Active = true
-main.Draggable = true
-Instance.new("UICorner", main).CornerRadius = UDim.new(0, 10)
+-- ================= VARIABLES =================
+local recording, replaying, loopReplay, npcWalking = false, false, false, false
+local recordData, animTracksCache = {}, {}
+local activeTween = nil
+local replaySpeed = 1
+local AFK_TIME, AFK_WAIT = 30, 10
+local lastPosition = hrp.Position
+local afkStart = nil
+local afkEnabled = true
 
-local stroke = Instance.new("UIStroke", main)
-stroke.Thickness = 2
+-- ================= FUN MEME LABEL =================
+local function createMemeLabel(text,color)
+    local gui = Instance.new("BillboardGui")
+    gui.Size = UDim2.new(0,150,0,50)
+    gui.AlwaysOnTop = true
+    gui.Adornee = hrp
+    gui.Name = "MemeLabel_"..text
 
--- Rainbow toggle
-local rainbow = true
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1,0,1,0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = color
+    label.TextScaled = true
+    label.Font = Enum.Font.GothamBold
+    label.Parent = gui
+
+    gui.Parent = hrp
+    return gui
+end
+
+local meme1 = createMemeLabel("🚀 GO GO GO!", Color3.fromRGB(255,0,0))
+local meme2 = createMemeLabel("LOL XD", Color3.fromRGB(0,255,0))
+local meme3 = createMemeLabel("AFK???", Color3.fromRGB(255,255,0))
+
+-- ================= RECORD/REPLAY =================
+local function startRecording()
+    if recording then return end
+    recording = true
+    table.clear(recordData)
+    local startTime = tick()
+    task.spawn(function()
+        while recording do
+            task.wait(0.05)
+            local step = {time=tick()-startTime, cframe=hrp.CFrame, animTracks={}}
+            for _,track in ipairs(hum:GetPlayingAnimationTracks()) do
+                table.insert(step.animTracks,{
+                    animationId=track.Animation.AnimationId,
+                    timePosition=track.TimePosition,
+                    speed=track.Speed,
+                    weight=track.Weight
+                })
+            end
+            table.insert(recordData, step)
+            if #recordData>2000 then table.remove(recordData,1) end
+        end
+    end)
+end
+
+local function stopRecording() recording=false end
+
+local function startReplay()
+    if #recordData==0 or replaying then return end
+    replaying=true
+    for _,track in pairs(animTracksCache) do if track.IsPlaying then track:Stop() end end
+
+    task.spawn(function()
+        repeat
+            for i,step in ipairs(recordData) do
+                if not replaying then break end
+                local nextStep=recordData[i+1]
+                local waitTime=nextStep and (nextStep.time-step.time)/replaySpeed or 0.05
+                local tween=TweenService:Create(hrp, TweenInfo.new(waitTime,Enum.EasingStyle.Linear),{CFrame=step.cframe})
+                tween:Play()
+                tween.Completed:Wait()
+                for _,anim in ipairs(step.animTracks) do
+                    local track=animTracksCache[anim.animationId]
+                    if not track then
+                        local a=Instance.new("Animation")
+                        a.AnimationId=anim.animationId
+                        track=hum:LoadAnimation(a)
+                        animTracksCache[anim.animationId]=track
+                    end
+                    track.TimePosition=anim.timePosition
+                    track.Speed=anim.speed*replaySpeed
+                    track:AdjustWeight(anim.weight)
+                    if not track.IsPlaying then track:Play() end
+                end
+            end
+        until not loopReplay or not replaying
+        replaying=false
+    end)
+end
+
+local function stopReplay() replaying=false end
+
+-- ================= NPC WALK =================
+local function startNPCWalk()
+    if npcWalking then return end
+    npcWalking=true
+    task.spawn(function()
+        while npcWalking do
+            local offset=Vector3.new(math.random(-30,30),0,math.random(-30,30))
+            local target=hrp.Position+offset
+            local tween=TweenService:Create(hrp,TweenInfo.new((hrp.Position-target).Magnitude/10,Enum.EasingStyle.Linear),{CFrame=CFrame.lookAt(hrp.Position,target)})
+            tween:Play()
+            activeTween=tween
+            tween.Completed:Wait()
+            task.wait(math.random(2,5))
+        end
+    end)
+end
+
+local function stopNPCWalk()
+    npcWalking=false
+    if activeTween then activeTween:Cancel(); activeTween=nil end
+end
+
+-- ================= AFK =================
 task.spawn(function()
-	while task.wait() do
-		if rainbow then
-			for hue = 0, 1, 0.01 do
-				stroke.Color = Color3.fromHSV(hue, 1, 1)
-				task.wait(0.02)
-			end
-		else
-			stroke.Color = Color3.fromRGB(255, 255, 255)
-			task.wait(0.1)
-		end
-	end
+    while task.wait(1) do
+        if not afkEnabled then afkStart=nil continue end
+        local dist=(hrp.Position-lastPosition).Magnitude
+        if dist<3 then
+            if not afkStart then afkStart=tick() end
+            if tick()-afkStart>=AFK_TIME then
+                meme3.Text="AFK AFK AFK!!!"
+                startNPCWalk()
+            end
+        else
+            afkStart=nil
+            meme3.Text="AFK???"
+        end
+        lastPosition=hrp.Position
+    end
 end)
 
--- Header
-local header = Instance.new("TextLabel", main)
-header.Size = UDim2.new(1, 0, 0, 30)
-header.BackgroundTransparency = 1
-header.Text = "💎 Diamond Farm | RoyRedRed
-header.TextColor3 = Color3.fromRGB(255, 255, 255)
-header.Font = Enum.Font.GothamBold
-header.TextSize = 14
-
--- Tab Buttons
-local tabFrame = Instance.new("Frame", main)
-tabFrame.Size = UDim2.new(1, 0, 0, 30)
-tabFrame.Position = UDim2.new(0, 0, 0, 30)
-tabFrame.BackgroundTransparency = 1
-
-local pages = {}
-local currentPage
-
-local function switchPage(name)
-	for n, pg in pairs(pages) do
-		pg.Visible = (n == name)
-	end
-end
-
-local function createTab(name, posX)
-	local btn = Instance.new("TextButton", tabFrame)
-	btn.Size = UDim2.new(0, 90, 0, 25)
-	btn.Position = UDim2.new(0, posX, 0, 0)
-	btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	btn.TextColor3 = Color3.new(1, 1, 1)
-	btn.Font = Enum.Font.GothamBold
-	btn.TextSize = 13
-	btn.Text = name
-	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-
-	btn.MouseButton1Click:Connect(function()
-		switchPage(name)
-	end)
-end
-
--- Pages holder
-local content = Instance.new("Frame", main)
-content.Size = UDim2.new(1, -20, 1, -70)
-content.Position = UDim2.new(0, 10, 0, 65)
-content.BackgroundTransparency = 1
-
--- Page template
-local function createPage(name)
-	local frame = Instance.new("Frame", content)
-	frame.Size = UDim2.new(1, 0, 1, 0)
-	frame.BackgroundTransparency = 1
-	frame.Visible = false
-	pages[name] = frame
-	return frame
-end
-
---=== FARM PAGE ===--
-local farmPage = createPage("Farm")
-
-local diamondLabel = Instance.new("TextLabel", farmPage)
-diamondLabel.Size = UDim2.new(1, -20, 0, 35)
-diamondLabel.Position = UDim2.new(0, 10, 0, 0)
-diamondLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-diamondLabel.TextColor3 = Color3.new(1, 1, 1)
-diamondLabel.Font = Enum.Font.GothamBold
-diamondLabel.TextSize = 14
-diamondLabel.BorderSizePixel = 0
-Instance.new("UICorner", diamondLabel).CornerRadius = UDim.new(0, 6)
-
-task.spawn(function()
-	while task.wait(0.2) do
-		diamondLabel.Text = "Diamonds: " .. DiamondCount.Text
-	end
+-- ================= RESPAWN =================
+player.CharacterAdded:Connect(function(newChar)
+    char=newChar
+    hum=newChar:WaitForChild("Humanoid")
+    hrp=newChar:WaitForChild("HumanoidRootPart")
+    recording,replaying,npcWalking=false,false,false
+    lastPosition=hrp.Position
+    afkStart=nil
+    meme1.Parent=hrp
+    meme2.Parent=hrp
+    meme3.Parent=hrp
 end)
 
-local autoFarm = false
-local farmBtn = Instance.new("TextButton", farmPage)
-farmBtn.Size = UDim2.new(1, -20, 0, 30)
-farmBtn.Position = UDim2.new(0, 10, 0, 50)
-farmBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-farmBtn.TextColor3 = Color3.new(1, 1, 1)
-farmBtn.Font = Enum.Font.GothamBold
-farmBtn.TextSize = 14
-farmBtn.Text = "Auto Farm: OFF 🚫"
-Instance.new("UICorner", farmBtn).CornerRadius = UDim.new(0, 6)
-
-farmBtn.MouseButton1Click:Connect(function()
-	autoFarm = not autoFarm
-	farmBtn.Text = autoFarm and "Auto Farm: ON ✅" or "Auto Farm: OFF 🚫"
-	if autoFarm then
-		task.spawn(function()
-			while autoFarm do
-				for _, v in pairs(workspace:GetDescendants()) do
-					if v.ClassName == "Model" and v.Name == "Diamond" then
-						pcall(function()
-							Remote:FireServer(v)
-						end)
-					end
-				end
-				task.wait(1)
-			end
-		end)
-	end
-end)
-
---=== TELEPORT PAGE ===--
-local tpPage = createPage("Teleport")
-
-local hopBtn = Instance.new("TextButton", tpPage)
-hopBtn.Size = UDim2.new(1, -20, 0, 30)
-hopBtn.Position = UDim2.new(0, 10, 0, 0)
-hopBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-hopBtn.TextColor3 = Color3.new(1, 1, 1)
-hopBtn.Font = Enum.Font.GothamBold
-hopBtn.TextSize = 14
-hopBtn.Text = "Hop Server 🌍"
-Instance.new("UICorner", hopBtn).CornerRadius = UDim.new(0, 6)
-
-hopBtn.MouseButton1Click:Connect(function()
-	hopServer()
-end)
-
-local rejoinBtn = Instance.new("TextButton", tpPage)
-rejoinBtn.Size = UDim2.new(1, -20, 0, 30)
-rejoinBtn.Position = UDim2.new(0, 10, 0, 40)
-rejoinBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-rejoinBtn.TextColor3 = Color3.new(1, 1, 1)
-rejoinBtn.Font = Enum.Font.GothamBold
-rejoinBtn.TextSize = 14
-rejoinBtn.Text = "Rejoin 🔄"
-Instance.new("UICorner", rejoinBtn).CornerRadius = UDim.new(0, 6)
-
-rejoinBtn.MouseButton1Click:Connect(function()
-	TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
-end)
-
---=== SETTINGS PAGE ===--
-local setPage = createPage("Settings")
-
-local rainbowBtn = Instance.new("TextButton", setPage)
-rainbowBtn.Size = UDim2.new(1, -20, 0, 30)
-rainbowBtn.Position = UDim2.new(0, 10, 0, 0)
-rainbowBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-rainbowBtn.TextColor3 = Color3.new(1, 1, 1)
-rainbowBtn.Font = Enum.Font.GothamBold
-rainbowBtn.TextSize = 14
-rainbowBtn.Text = "Rainbow Border: ON 🌈"
-Instance.new("UICorner", rainbowBtn).CornerRadius = UDim.new(0, 6)
-
-rainbowBtn.MouseButton1Click:Connect(function()
-	rainbow = not rainbow
-	rainbowBtn.Text = rainbow and "Rainbow Border: ON 🌈" or "Rainbow Border: OFF ❌"
-end)
-
-local closeBtn = Instance.new("TextButton", setPage)
-closeBtn.Size = UDim2.new(1, -20, 0, 30)
-closeBtn.Position = UDim2.new(0, 10, 0, 40)
-closeBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-closeBtn.TextColor3 = Color3.new(1, 1, 1)
-closeBtn.Font = Enum.Font.GothamBold
-closeBtn.TextSize = 14
-closeBtn.Text = "Close UI ❌"
-Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 6)
-
-closeBtn.MouseButton1Click:Connect(function()
-	a:Destroy()
-end)
-
--- Create Tabs
-createTab("Farm", 10)
-createTab("Teleport", 110)
-createTab("Settings", 210)
-
--- Default page
-switchPage("Farm")
+print("[Tiện Ích 67] Full Motion + Meme Text loaded ✅")
