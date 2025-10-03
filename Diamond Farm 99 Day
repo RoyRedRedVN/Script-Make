@@ -1,4 +1,4 @@
---// Tiện Ích 67 - Full Motion Fix 2025 + Meme Text
+--// Tiện Ích 67 - Enhanced Full Fix 2025
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
@@ -7,6 +7,17 @@ local player = Players.LocalPlayer
 local char = player.Character or player.CharacterAdded:Wait()
 local hum = char:WaitForChild("Humanoid")
 local hrp = char:WaitForChild("HumanoidRootPart")
+
+-- ================= RAYFIELD UI =================
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local Window = Rayfield:CreateWindow({
+    Name = "Tiện Ích 67 - DEMO",
+    LoadingTitle = "Đang tải...",
+    LoadingSubtitle = "by Roy",
+    ConfigurationSaving = {Enabled=true, FileName="TienIch67_Config"},
+    Discord={Enabled=false},
+    KeySystem=false
+})
 
 -- ================= VARIABLES =================
 local recording, replaying, loopReplay, npcWalking = false, false, false, false
@@ -18,134 +29,189 @@ local lastPosition = hrp.Position
 local afkStart = nil
 local afkEnabled = true
 
--- ================= FUN MEME LABEL =================
-local function createMemeLabel(text,color)
-    local gui = Instance.new("BillboardGui")
-    gui.Size = UDim2.new(0,150,0,50)
-    gui.AlwaysOnTop = true
-    gui.Adornee = hrp
-    gui.Name = "MemeLabel_"..text
+-- ================= TABS =================
+local RecordTab = Window:CreateTab("Ghi & Phát", 4483362458)
+local NPCTab = Window:CreateTab("NPC Walk", 4483362458)
+local SettingsTab = Window:CreateTab("Cài đặt", 4483362458)
 
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1,0,1,0)
-    label.BackgroundTransparency = 1
-    label.Text = text
-    label.TextColor3 = color
-    label.TextScaled = true
-    label.Font = Enum.Font.GothamBold
-    label.Parent = gui
-
-    gui.Parent = hrp
-    return gui
-end
-
-local meme1 = createMemeLabel("🚀 GO GO GO!", Color3.fromRGB(255,0,0))
-local meme2 = createMemeLabel("LOL XD", Color3.fromRGB(0,255,0))
-local meme3 = createMemeLabel("AFK???", Color3.fromRGB(255,255,0))
-
--- ================= RECORD/REPLAY =================
+-- ================= RECORD FUNCTIONS =================
 local function startRecording()
     if recording then return end
     recording = true
     table.clear(recordData)
+    Rayfield:Notify({Title="Bắt đầu ghi", Content="Đang ghi lại chuyển động...", Duration=3, Image=4483362458})
     local startTime = tick()
+
     task.spawn(function()
         while recording do
-            task.wait(0.05)
-            local step = {time=tick()-startTime, cframe=hrp.CFrame, animTracks={}}
-            for _,track in ipairs(hum:GetPlayingAnimationTracks()) do
-                table.insert(step.animTracks,{
-                    animationId=track.Animation.AnimationId,
-                    timePosition=track.TimePosition,
-                    speed=track.Speed,
-                    weight=track.Weight
+            task.wait(0.1)
+            local step = {
+                time = tick() - startTime,
+                cframe = hrp.CFrame,
+                animTracks = {}
+            }
+            for _, track in ipairs(hum:GetPlayingAnimationTracks()) do
+                table.insert(step.animTracks, {
+                    animationId = track.Animation.AnimationId,
+                    timePosition = track.TimePosition,
+                    speed = track.Speed,
+                    weight = track.Weight
                 })
             end
             table.insert(recordData, step)
-            if #recordData>2000 then table.remove(recordData,1) end
+            if #recordData > 2000 then
+                table.remove(recordData, 1)
+            end
         end
     end)
 end
 
-local function stopRecording() recording=false end
+local function stopRecording()
+    if not recording then return end
+    recording = false
+    Rayfield:Notify({
+        Title="Dừng ghi",
+        Content=string.format("Đã ghi %d frames (%.1fs)", #recordData, recordData[#recordData] and recordData[#recordData].time or 0),
+        Duration=3,
+        Image=4483362458
+    })
+end
 
 local function startReplay()
-    if #recordData==0 or replaying then return end
-    replaying=true
-    for _,track in pairs(animTracksCache) do if track.IsPlaying then track:Stop() end end
+    if #recordData == 0 then
+        Rayfield:Notify({Title="Lỗi", Content="Chưa có dữ liệu ghi!", Duration=3, Image=4483362458})
+        return
+    end
+    if replaying then return end
+    replaying = true
+
+    -- Stop old animations
+    for _, track in pairs(animTracksCache) do
+        if track.IsPlaying then track:Stop() end
+    end
+
+    Rayfield:Notify({Title="Phát lại", Content="Đang phát lại...", Duration=2, Image=4483362458})
 
     task.spawn(function()
         repeat
-            for i,step in ipairs(recordData) do
+            for i, step in ipairs(recordData) do
                 if not replaying then break end
-                local nextStep=recordData[i+1]
-                local waitTime=nextStep and (nextStep.time-step.time)/replaySpeed or 0.05
-                local tween=TweenService:Create(hrp, TweenInfo.new(waitTime,Enum.EasingStyle.Linear),{CFrame=step.cframe})
+                local nextStep = recordData[i + 1]
+                local waitTime = nextStep and (nextStep.time - step.time) / replaySpeed or 0.1
+
+                local tween = TweenService:Create(hrp, TweenInfo.new(waitTime, Enum.EasingStyle.Linear), {CFrame = step.cframe})
                 tween:Play()
                 tween.Completed:Wait()
-                for _,anim in ipairs(step.animTracks) do
-                    local track=animTracksCache[anim.animationId]
+
+                for _, anim in ipairs(step.animTracks) do
+                    local track = animTracksCache[anim.animationId]
                     if not track then
-                        local a=Instance.new("Animation")
-                        a.AnimationId=anim.animationId
-                        track=hum:LoadAnimation(a)
-                        animTracksCache[anim.animationId]=track
+                        local animObj = Instance.new("Animation")
+                        animObj.AnimationId = anim.animationId
+                        track = hum:LoadAnimation(animObj)
+                        animTracksCache[anim.animationId] = track
                     end
-                    track.TimePosition=anim.timePosition
-                    track.Speed=anim.speed*replaySpeed
+                    track.TimePosition = anim.timePosition
+                    track.Speed = anim.speed * replaySpeed
                     track:AdjustWeight(anim.weight)
                     if not track.IsPlaying then track:Play() end
                 end
             end
         until not loopReplay or not replaying
-        replaying=false
+        replaying = false
     end)
 end
 
-local function stopReplay() replaying=false end
+local function stopReplay()
+    replaying = false
+end
 
 -- ================= NPC WALK =================
 local function startNPCWalk()
     if npcWalking then return end
-    npcWalking=true
+    npcWalking = true
+    Rayfield:Notify({Title="NPC Walk", Content="Bắt đầu đi bộ...", Duration=2, Image=4483362458})
     task.spawn(function()
         while npcWalking do
-            local offset=Vector3.new(math.random(-30,30),0,math.random(-30,30))
-            local target=hrp.Position+offset
-            local tween=TweenService:Create(hrp,TweenInfo.new((hrp.Position-target).Magnitude/10,Enum.EasingStyle.Linear),{CFrame=CFrame.lookAt(hrp.Position,target)})
-            tween:Play()
-            activeTween=tween
-            tween.Completed:Wait()
+            local offset = Vector3.new(math.random(-30,30), 0, math.random(-30,30))
+            local target = hrp.Position + offset
+            local distance = (hrp.Position - target).Magnitude
+            local targetCFrame = CFrame.lookAt(hrp.Position, target)
+
+            activeTween = TweenService:Create(hrp, TweenInfo.new(distance/10, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
+            activeTween:Play()
+            activeTween.Completed:Wait()
             task.wait(math.random(2,5))
         end
     end)
 end
 
 local function stopNPCWalk()
-    npcWalking=false
+    npcWalking = false
     if activeTween then activeTween:Cancel(); activeTween=nil end
 end
 
--- ================= AFK =================
+-- ================= UI =================
+-- Record Tab
+RecordTab:CreateButton({Name="Bắt đầu ghi", Callback=startRecording})
+RecordTab:CreateButton({Name="Dừng ghi", Callback=stopRecording})
+RecordTab:CreateButton({Name="Phát lại", Callback=startReplay})
+RecordTab:CreateButton({Name="Dừng phát", Callback=stopReplay})
+RecordTab:CreateToggle({Name="Lặp lại liên tục", CurrentValue=false, Flag="LoopReplay", Callback=function(v) loopReplay=v end})
+RecordTab:CreateSlider({Name="Tốc độ phát (x)", Range={0.5,3}, Increment=0.1, CurrentValue=1, Flag="ReplaySpeed", Callback=function(v) replaySpeed=v end})
+RecordTab:CreateButton({Name="Xóa dữ liệu ghi", Callback=function() table.clear(recordData); Rayfield:Notify({Title="Đã xóa", Content="Dữ liệu ghi đã bị xóa!", Duration=2, Image=4483362458}) end})
+
+-- NPC Tab
+NPCTab:CreateButton({Name="Bật/Tắt NPC Walk", Callback=function() if npcWalking then stopNPCWalk() else startNPCWalk() end end})
+NPCTab:CreateToggle({Name="Phát hiện AFK", CurrentValue=true, Flag="AFKDetection", Callback=function(v) afkEnabled=v end})
+NPCTab:CreateSlider({Name="Thời gian AFK (giây)", Range={10,120}, Increment=5, CurrentValue=AFK_TIME, Flag="AFKTime", Callback=function(v) AFK_TIME=v end})
+NPCTab:CreateSlider({Name="Thời gian chờ (giây)", Range={5,30}, Increment=1, CurrentValue=AFK_WAIT, Flag="AFKWait", Callback=function(v) AFK_WAIT=v end})
+
+-- Settings Tab
+SettingsTab:CreateLabel("Tiện Ích 67 - Version 2.0")
+SettingsTab:CreateLabel("Tác giả: Roy")
+SettingsTab:CreateParagraph({Title="Hướng dẫn", Content="1. Ghi: Bắt đầu ghi và di chuyển\n2. Phát: Phát lại dữ liệu\n3. NPC Walk: Đi bộ tự động\n4. AFK: Kích hoạt NPC Walk khi AFK"})
+SettingsTab:CreateButton({Name="Đóng UI", Callback=function() Rayfield:Destroy() end})
+
+-- ================= AFK DETECTION =================
+local afkLabel = Instance.new("BillboardGui")
+afkLabel.Size = UDim2.new(0,100,0,50)
+afkLabel.AlwaysOnTop = true
+afkLabel.Adornee = hrp
+afkLabel.Name = "AFKLabel"
+local textLabel = Instance.new("TextLabel")
+textLabel.Size = UDim2.new(1,0,1,0)
+textLabel.BackgroundTransparency = 1
+textLabel.TextColor3 = Color3.fromRGB(255,100,0)
+textLabel.TextScaled = true
+textLabel.Text = "AFK"
+textLabel.Font = Enum.Font.GothamBold
+textLabel.Visible = false
+textLabel.Parent = afkLabel
+afkLabel.Parent = hrp
+
 task.spawn(function()
     while task.wait(1) do
-        if not afkEnabled then afkStart=nil continue end
-        local dist=(hrp.Position-lastPosition).Magnitude
-        if dist<3 then
+        if not afkEnabled then textLabel.Visible=false; afkStart=nil continue end
+        local dist = (hrp.Position - lastPosition).Magnitude
+        if dist < 3 then
             if not afkStart then afkStart=tick() end
-            if tick()-afkStart>=AFK_TIME then
-                meme3.Text="AFK AFK AFK!!!"
-                startNPCWalk()
+            if tick()-afkStart >= AFK_TIME and not textLabel.Visible then
+                textLabel.Visible=true
+                Rayfield:Notify({Title="Phát hiện AFK", Content=string.format("Sẽ bật NPC Walk sau %d giây...", AFK_WAIT), Duration=3, Image=4483362458})
+                task.delay(AFK_WAIT, function()
+                    if textLabel.Visible and afkEnabled then startNPCWalk() end
+                end)
             end
         else
             afkStart=nil
-            meme3.Text="AFK???"
+            textLabel.Visible=false
         end
         lastPosition=hrp.Position
     end
 end)
 
--- ================= RESPAWN =================
+-- ================= CLEANUP ON RESPAWN =================
 player.CharacterAdded:Connect(function(newChar)
     char=newChar
     hum=newChar:WaitForChild("Humanoid")
@@ -153,9 +219,25 @@ player.CharacterAdded:Connect(function(newChar)
     recording,replaying,npcWalking=false,false,false
     lastPosition=hrp.Position
     afkStart=nil
-    meme1.Parent=hrp
-    meme2.Parent=hrp
-    meme3.Parent=hrp
+    if afkLabel then afkLabel:Destroy() end
+    afkLabel = Instance.new("BillboardGui")
+    afkLabel.Size = UDim2.new(0,100,0,50)
+    afkLabel.AlwaysOnTop = true
+    afkLabel.Adornee=hrp
+    afkLabel.Name="AFKLabel"
+    textLabel=Instance.new("TextLabel")
+    textLabel.Size=UDim2.new(1,0,1,0)
+    textLabel.BackgroundTransparency=1
+    textLabel.TextColor3=Color3.fromRGB(255,100,0)
+    textLabel.TextScaled=true
+    textLabel.Text="AFK"
+    textLabel.Font=Enum.Font.GothamBold
+    textLabel.Visible=false
+    textLabel.Parent=afkLabel
+    afkLabel.Parent=hrp
+    Rayfield:Notify({Title="Respawn", Content="Script đã reset!", Duration=2, Image=4483362458})
 end)
 
-print("[Tiện Ích 67] Full Motion + Meme Text loaded ✅")
+-- ================= LOAD MESSAGE =================
+Rayfield:Notify({Title="Tiện Ích 67", Content="Script đã load thành công!", Duration=5, Image=4483362458})
+print("[Tiện Ích 67] Loaded successfully!")
