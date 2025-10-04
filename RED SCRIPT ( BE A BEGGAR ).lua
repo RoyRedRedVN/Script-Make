@@ -31,18 +31,44 @@ local Window = Rayfield:CreateWindow({
         Invite = "",
         RememberJoins = true
     },
-    KeySystem = false
+    KeySystem = false,
+    Theme = "Amethyst" -- Closest to orange in default themes
 })
 
--- Apply Orange Theme
-Rayfield:SetTheme({
-    Accent = Color3.fromRGB(255, 140, 0), -- Dark Orange
-    SecondaryAccent = Color3.fromRGB(255, 165, 0), -- Light Orange
-    Background = Color3.fromRGB(25, 25, 25), -- Dark Background
-    SecondaryBackground = Color3.fromRGB(35, 35, 35), -- Secondary Dark
-    TextColor = Color3.fromRGB(255, 255, 255), -- White Text
-    PlaceholderColor = Color3.fromRGB(170, 170, 170) -- Gray Placeholder
-})
+-- Custom Orange Theme (if supported)
+pcall(function()
+    Window:SetTheme({
+        TextColor = Color3.fromRGB(240, 240, 240),
+        Background = Color3.fromRGB(25, 25, 25),
+        Topbar = Color3.fromRGB(34, 34, 34),
+        Shadow = Color3.fromRGB(0, 0, 0),
+        NotificationBackground = Color3.fromRGB(20, 20, 20),
+        NotificationActionsBackground = Color3.fromRGB(230, 230, 230),
+        TabBackground = Color3.fromRGB(80, 80, 80),
+        TabStroke = Color3.fromRGB(85, 85, 85),
+        TabBackgroundSelected = Color3.fromRGB(210, 210, 210),
+        TabTextColor = Color3.fromRGB(240, 240, 240),
+        SelectedTabTextColor = Color3.fromRGB(50, 50, 50),
+        ElementBackground = Color3.fromRGB(35, 35, 35),
+        ElementBackgroundHover = Color3.fromRGB(40, 40, 40),
+        SecondaryElementBackground = Color3.fromRGB(25, 25, 25),
+        ElementStroke = Color3.fromRGB(50, 50, 50),
+        SecondaryElementStroke = Color3.fromRGB(40, 40, 40),
+        SliderBackground = Color3.fromRGB(43, 105, 159),
+        SliderProgress = Color3.fromRGB(255, 140, 0), -- Orange
+        SliderStroke = Color3.fromRGB(48, 119, 180),
+        ToggleBackground = Color3.fromRGB(30, 30, 30),
+        ToggleEnabled = Color3.fromRGB(255, 140, 0), -- Orange
+        ToggleDisabled = Color3.fromRGB(100, 100, 100),
+        ToggleEnabledStroke = Color3.fromRGB(255, 165, 0), -- Light Orange
+        ToggleDisabledStroke = Color3.fromRGB(125, 125, 125),
+        ToggleEnabledOuterStroke = Color3.fromRGB(255, 140, 0), -- Orange
+        ToggleDisabledOuterStroke = Color3.fromRGB(65, 65, 65),
+        InputBackground = Color3.fromRGB(30, 30, 30),
+        InputStroke = Color3.fromRGB(65, 65, 65),
+        PlaceholderColor = Color3.fromRGB(178, 178, 178)
+    })
+end)
 
 -- Functions
 local function gc()
