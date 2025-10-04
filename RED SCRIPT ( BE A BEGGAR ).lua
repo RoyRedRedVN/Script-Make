@@ -517,121 +517,35 @@ MiniTab:CreateLabel("Status: " .. (shared.AutoClick and shared.AutoClick.Value a
 
 -- Teleport Tab
 local TeleportTab = Window:CreateTab("📍 Teleport", 4483362458)
-local TeleportSection = TeleportTab:CreateSection("Location Teleports")
 
-TeleportTab:CreateParagraph({
-    Title = "Quick Teleport",
-    Content = "Teleport to different locations in the map (1-8)."
-})
-
-local function teleportTo(locationNumber)
-    local ch = gc()
-    if not ch then 
-        Rayfield:Notify({
-            Title = "Teleport Failed",
-            Content = "Character not found!",
-            Duration = 3,
-            Image = 4483362458,
-        })
-        return 
-    end
-    
-    local r = ch:FindFirstChild("HumanoidRootPart")
-    if not r then 
-        Rayfield:Notify({
-            Title = "Teleport Failed",
-            Content = "HumanoidRootPart not found!",
-            Duration = 3,
-            Image = 4483362458,
-        })
-        return 
-    end
-    
-    local location = workspace:FindFirstChild(tostring(locationNumber))
-    if not location then
-        Rayfield:Notify({
-            Title = "Teleport Failed",
-            Content = "Location " .. locationNumber .. " not found!",
-            Duration = 3,
-            Image = 4483362458,
-        })
-        return
-    end
-    
-    local targetPos
-    if location:IsA("Model") then
-        targetPos = location:GetPrimaryPartCFrame() or location:FindFirstChildWhichIsA("BasePart").CFrame
-    elseif location:IsA("BasePart") then
-        targetPos = location.CFrame
-    else
-        Rayfield:Notify({
-            Title = "Teleport Failed",
-            Content = "Invalid location type!",
-            Duration = 3,
-            Image = 4483362458,
-        })
-        return
-    end
-    
-    r.CFrame = targetPos + Vector3.new(0, 5, 0)
-    Rayfield:Notify({
-        Title = "Teleported",
-        Content = "Teleported to Location " .. locationNumber .. "!",
-        Duration = 3,
-        Image = 4483362458,
-    })
+local function tp(loc)
+    pcall(function()
+        local ch = gc()
+        local r = ch and ch:FindFirstChild("HumanoidRootPart")
+        if not r then return end
+        
+        local pos = loc:IsA("Model") and (loc:GetPrimaryPartCFrame() or loc:FindFirstChildWhichIsA("BasePart").CFrame) or loc.CFrame
+        r.CFrame = pos + Vector3.new(0, 5, 0)
+    end)
 end
 
--- Create teleport buttons for locations 1-8
 for i = 1, 8 do
     TeleportTab:CreateButton({
-        Name = "📍 Teleport to Location " .. i,
+        Name = "📍 Location " .. i,
         Callback = function()
-            teleportTo(i)
+            local loc = workspace:FindFirstChild(tostring(i))
+            if loc then tp(loc) end
         end,
     })
 end
 
-TeleportTab:CreateSection("Base Teleports")
-
 TeleportTab:CreateButton({
-    Name = "🏡 Teleport to My Base",
+    Name = "🏡 My Base",
     Callback = function()
-        if not userBase then
-            Rayfield:Notify({
-                Title = "Base Not Found",
-                Content = "You don't own a base! Check base first.",
-                Duration = 5,
-                Image = 4483362458,
-            })
-            return
+        if userBase then
+            local base = workspace.Bases:FindFirstChild(userBase)
+            if base then tp(base) end
         end
-        
-        local ch = gc()
-        if not ch then return end
-        local r = ch:FindFirstChild("HumanoidRootPart")
-        if not r then return end
-        
-        local bases = workspace:FindFirstChild("Bases")
-        if not bases then return end
-        
-        local base = bases:FindFirstChild(userBase)
-        if not base then return end
-        
-        local basePos
-        if base:IsA("Model") then
-            basePos = base:GetPrimaryPartCFrame() or base:FindFirstChildWhichIsA("BasePart").CFrame
-        else
-            basePos = base.CFrame
-        end
-        
-        r.CFrame = basePos + Vector3.new(0, 5, 0)
-        Rayfield:Notify({
-            Title = "Teleported",
-            Content = "Teleported to your base #" .. userBase .. "!",
-            Duration = 3,
-            Image = 4483362458,
-        })
     end,
 })
 
