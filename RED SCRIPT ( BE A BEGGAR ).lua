@@ -32,14 +32,43 @@ local Window = Rayfield:CreateWindow({
         RememberJoins = true
     },
     KeySystem = false,
-    Theme = {
-        Accent = Color3.fromRGB(255, 140, 0), -- Orange
-        SecondaryAccent = Color3.fromRGB(255, 165, 0), -- Light Orange
-        Background = Color3.fromRGB(25, 25, 25),
-        SecondaryBackground = Color3.fromRGB(35, 35, 35),
-        TextColor = Color3.fromRGB(255, 255, 255)
-    }
+    Theme = "Amethyst" -- Closest to orange in default themes
 })
+
+-- Custom Orange Theme (if supported)
+pcall(function()
+    Window:SetTheme({
+        TextColor = Color3.fromRGB(240, 240, 240),
+        Background = Color3.fromRGB(25, 25, 25),
+        Topbar = Color3.fromRGB(34, 34, 34),
+        Shadow = Color3.fromRGB(0, 0, 0),
+        NotificationBackground = Color3.fromRGB(20, 20, 20),
+        NotificationActionsBackground = Color3.fromRGB(230, 230, 230),
+        TabBackground = Color3.fromRGB(80, 80, 80),
+        TabStroke = Color3.fromRGB(85, 85, 85),
+        TabBackgroundSelected = Color3.fromRGB(210, 210, 210),
+        TabTextColor = Color3.fromRGB(240, 240, 240),
+        SelectedTabTextColor = Color3.fromRGB(50, 50, 50),
+        ElementBackground = Color3.fromRGB(35, 35, 35),
+        ElementBackgroundHover = Color3.fromRGB(40, 40, 40),
+        SecondaryElementBackground = Color3.fromRGB(25, 25, 25),
+        ElementStroke = Color3.fromRGB(50, 50, 50),
+        SecondaryElementStroke = Color3.fromRGB(40, 40, 40),
+        SliderBackground = Color3.fromRGB(43, 105, 159),
+        SliderProgress = Color3.fromRGB(255, 140, 0), -- Orange
+        SliderStroke = Color3.fromRGB(48, 119, 180),
+        ToggleBackground = Color3.fromRGB(30, 30, 30),
+        ToggleEnabled = Color3.fromRGB(255, 140, 0), -- Orange
+        ToggleDisabled = Color3.fromRGB(100, 100, 100),
+        ToggleEnabledStroke = Color3.fromRGB(255, 165, 0), -- Light Orange
+        ToggleDisabledStroke = Color3.fromRGB(125, 125, 125),
+        ToggleEnabledOuterStroke = Color3.fromRGB(255, 140, 0), -- Orange
+        ToggleDisabledOuterStroke = Color3.fromRGB(65, 65, 65),
+        InputBackground = Color3.fromRGB(30, 30, 30),
+        InputStroke = Color3.fromRGB(65, 65, 65),
+        PlaceholderColor = Color3.fromRGB(178, 178, 178)
+    })
+end)
 
 -- Functions
 local function gc()
@@ -485,6 +514,126 @@ local MiniToggle = MiniTab:CreateToggle({
 })
 
 MiniTab:CreateLabel("Status: " .. (shared.AutoClick and shared.AutoClick.Value and "ON" or "OFF"))
+
+-- Teleport Tab
+local TeleportTab = Window:CreateTab("📍 Teleport", 4483362458)
+local TeleportSection = TeleportTab:CreateSection("Location Teleports")
+
+TeleportTab:CreateParagraph({
+    Title = "Quick Teleport",
+    Content = "Teleport to different locations in the map (1-8)."
+})
+
+local function teleportTo(locationNumber)
+    local ch = gc()
+    if not ch then 
+        Rayfield:Notify({
+            Title = "Teleport Failed",
+            Content = "Character not found!",
+            Duration = 3,
+            Image = 4483362458,
+        })
+        return 
+    end
+    
+    local r = ch:FindFirstChild("HumanoidRootPart")
+    if not r then 
+        Rayfield:Notify({
+            Title = "Teleport Failed",
+            Content = "HumanoidRootPart not found!",
+            Duration = 3,
+            Image = 4483362458,
+        })
+        return 
+    end
+    
+    local location = workspace:FindFirstChild(tostring(locationNumber))
+    if not location then
+        Rayfield:Notify({
+            Title = "Teleport Failed",
+            Content = "Location " .. locationNumber .. " not found!",
+            Duration = 3,
+            Image = 4483362458,
+        })
+        return
+    end
+    
+    local targetPos
+    if location:IsA("Model") then
+        targetPos = location:GetPrimaryPartCFrame() or location:FindFirstChildWhichIsA("BasePart").CFrame
+    elseif location:IsA("BasePart") then
+        targetPos = location.CFrame
+    else
+        Rayfield:Notify({
+            Title = "Teleport Failed",
+            Content = "Invalid location type!",
+            Duration = 3,
+            Image = 4483362458,
+        })
+        return
+    end
+    
+    r.CFrame = targetPos + Vector3.new(0, 5, 0)
+    Rayfield:Notify({
+        Title = "Teleported",
+        Content = "Teleported to Location " .. locationNumber .. "!",
+        Duration = 3,
+        Image = 4483362458,
+    })
+end
+
+-- Create teleport buttons for locations 1-8
+for i = 1, 8 do
+    TeleportTab:CreateButton({
+        Name = "📍 Teleport to Location " .. i,
+        Callback = function()
+            teleportTo(i)
+        end,
+    })
+end
+
+TeleportTab:CreateSection("Base Teleports")
+
+TeleportTab:CreateButton({
+    Name = "🏡 Teleport to My Base",
+    Callback = function()
+        if not userBase then
+            Rayfield:Notify({
+                Title = "Base Not Found",
+                Content = "You don't own a base! Check base first.",
+                Duration = 5,
+                Image = 4483362458,
+            })
+            return
+        end
+        
+        local ch = gc()
+        if not ch then return end
+        local r = ch:FindFirstChild("HumanoidRootPart")
+        if not r then return end
+        
+        local bases = workspace:FindFirstChild("Bases")
+        if not bases then return end
+        
+        local base = bases:FindFirstChild(userBase)
+        if not base then return end
+        
+        local basePos
+        if base:IsA("Model") then
+            basePos = base:GetPrimaryPartCFrame() or base:FindFirstChildWhichIsA("BasePart").CFrame
+        else
+            basePos = base.CFrame
+        end
+        
+        r.CFrame = basePos + Vector3.new(0, 5, 0)
+        Rayfield:Notify({
+            Title = "Teleported",
+            Content = "Teleported to your base #" .. userBase .. "!",
+            Duration = 3,
+            Image = 4483362458,
+        })
+    end,
+})
 
 -- Settings Tab
 local SettingsTab = Window:CreateTab("⚙️ Settings", 4483362458)
