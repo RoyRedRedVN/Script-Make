@@ -31,14 +31,17 @@ local Window = Rayfield:CreateWindow({
         Invite = "",
         RememberJoins = true
     },
-    KeySystem = false,
-    Theme = {
-        Accent = Color3.fromRGB(255, 140, 0), -- Orange
-        SecondaryAccent = Color3.fromRGB(255, 165, 0), -- Light Orange
-        Background = Color3.fromRGB(25, 25, 25),
-        SecondaryBackground = Color3.fromRGB(35, 35, 35),
-        TextColor = Color3.fromRGB(255, 255, 255)
-    }
+    KeySystem = false
+})
+
+-- Apply Orange Theme
+Rayfield:SetTheme({
+    Accent = Color3.fromRGB(255, 140, 0), -- Dark Orange
+    SecondaryAccent = Color3.fromRGB(255, 165, 0), -- Light Orange
+    Background = Color3.fromRGB(25, 25, 25), -- Dark Background
+    SecondaryBackground = Color3.fromRGB(35, 35, 35), -- Secondary Dark
+    TextColor = Color3.fromRGB(255, 255, 255), -- White Text
+    PlaceholderColor = Color3.fromRGB(170, 170, 170) -- Gray Placeholder
 })
 
 -- Functions
@@ -202,6 +205,22 @@ local MainTab = Window:CreateTab("🏠 Main", 4483362458)
 local BaseSection = MainTab:CreateSection("🏡 Base Information")
 
 local BaseLabel = MainTab:CreateLabel("Base: Checking...")
+local MoneyEarnedLabel = MainTab:CreateLabel("Money Earned: $0")
+
+-- Update Money Earned
+task.spawn(function()
+    while task.wait(1) do
+        pcall(function()
+            local gui = p:WaitForChild("PlayerGui")
+            local moneyEarned = gui:FindFirstChild("MoneyEarned", true)
+            if moneyEarned and moneyEarned:IsA("TextLabel") then
+                MoneyEarnedLabel:Set("Money Earned: " .. moneyEarned.Text)
+            elseif moneyEarned and moneyEarned.Value then
+                MoneyEarnedLabel:Set("Money Earned: $" .. tostring(moneyEarned.Value))
+            end
+        end)
+    end
+end)
 
 task.spawn(function()
     task.wait(2)
