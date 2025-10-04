@@ -7,8 +7,9 @@ local p = P.LocalPlayer
 
 -- Variables
 local auto, stop, loop = false, false, nil
-local mc, bc = 0, 0
+local mc, bc, dc = 0, 0, 0
 local speed = 0.45
+local userBase = nil
 
 if not shared.AutoClick then
     shared.AutoClick = Instance.new("BoolValue")
@@ -148,13 +149,106 @@ local function bn(n)
     return false
 end
 
--- Money Tab
-local MoneyTab = Window:CreateTab("💰 Money Farm", 4483362458)
-local MoneySection = MoneyTab:CreateSection("Money Collection")
+local function checkBase()
+    local bases = workspace:FindFirstChild("Bases")
+    if not bases then return nil end
+    
+    for i = 1, 8 do
+        local base = bases:FindFirstChild(tostring(i))
+        if base then
+            local owner = base:FindFirstChild("Owner")
+            if owner and owner.Value == p then
+                return tostring(i)
+            end
+        end
+    end
+    return nil
+end
 
-local MoneyLabel = MoneyTab:CreateLabel("Collected: 0")
+local function donate()
+    if not userBase then return false end
+    
+    local ch = gc()
+    if not ch then return false end
+    local r = ch:FindFirstChild("HumanoidRootPart")
+    if not r then return false end
+    
+    local bases = workspace:FindFirstChild("Bases")
+    if not bases then return false end
+    
+    local base = bases:FindFirstChild(userBase)
+    if not base then return false end
+    
+    local donateParts = base:FindFirstChild("DonateParts")
+    if not donateParts then return false end
+    
+    local lookAt = donateParts:FindFirstChild("LookAt")
+    if not lookAt then return false end
+    
+    local pr = lookAt:FindFirstChild("ProximityPrompt")
+    if not pr then return false end
+    
+    r.CFrame = lookAt.CFrame + Vector3.new(0, 3, 0)
+    task.wait(0.1)
+    fireproximityprompt(pr)
+    dc = dc + 1
+    return true
+end
 
-local MoneyToggle = MoneyTab:CreateToggle({
+-- Main Tab
+local MainTab = Window:CreateTab("🏠 Main", 4483362458)
+
+-- Base Info Section
+local BaseSection = MainTab:CreateSection("🏡 Base Information")
+
+local BaseLabel = MainTab:CreateLabel("Base: Checking...")
+
+task.spawn(function()
+    task.wait(2)
+    userBase = checkBase()
+    if userBase then
+        BaseLabel:Set("Base: #" .. userBase .. " ✅")
+        Rayfield:Notify({
+            Title = "Base Found",
+            Content = "Your base is #" .. userBase,
+            Duration = 5,
+            Image = 4483362458,
+        })
+    else
+        BaseLabel:Set("Base: Not Found ❌")
+    end
+end)
+
+MainTab:CreateButton({
+    Name = "Re-check Base",
+    Callback = function()
+        userBase = checkBase()
+        if userBase then
+            BaseLabel:Set("Base: #" .. userBase .. " ✅")
+            Rayfield:Notify({
+                Title = "Base Found",
+                Content = "Your base is #" .. userBase,
+                Duration = 3,
+                Image = 4483362458,
+            })
+        else
+            BaseLabel:Set("Base: Not Found ❌")
+            Rayfield:Notify({
+                Title = "Base Not Found",
+                Content = "You don't own any base (1-8)",
+                Duration = 3,
+                Image = 4483362458,
+            })
+        end
+    end,
+})
+
+-- Money Section
+local MoneySection = MainTab:CreateSection("💰 Money Collection")
+
+local MoneyLabel = MainTab:CreateLabel("Collected: 0 | Donated: 0")
+
+local MoneyToggle = MainTab:CreateToggle({
     Name = "Auto Collect Money",
     CurrentValue = false,
     Flag = "MoneyToggle",
@@ -178,7 +272,7 @@ local MoneyToggle = MoneyTab:CreateToggle({
                     local m = fm()
                     if m then
                         cm(m)
-                        MoneyLabel:Set("Collected: " .. tostring(mc))
+                        MoneyLabel:Set("Collected: " .. tostring(mc) .. " | Donated: " .. tostring(dc))
                         task.wait(speed)
                     else
                         task.wait(1)
@@ -195,7 +289,40 @@ local MoneyToggle = MoneyTab:CreateToggle({
     end,
 })
 
-local SpeedSlider = MoneyTab:CreateSlider({
+local DonateToggle = MainTab:CreateToggle({
+    Name = "Auto Donate to Base",
+    CurrentValue = false,
+    Flag = "DonateToggle",
+    Callback = function(Value)
+        if Value then
+            if not userBase then
+                Rayfield:Notify({
+                    Title = "Error",
+                    Content = "Base not found! Check base first.",
+                    Duration = 5,
+                    Image = 4483362458,
+                })
+                DonateToggle:Set(false)
+                return
+            end
+            
+            task.spawn(function()
+                while DonateToggle.CurrentValue do
+                    pcall(function()
+                        local ch = gc()
+                        if ch and ch:FindFirstChild("Humanoid") and ch.Humanoid.Health > 0 then
+                            donate()
+                            MoneyLabel:Set("Collected: " .. tostring(mc) .. " | Donated: " .. tostring(dc))
+                        end
+                    end)
+                    task.wait(speed)
+                end
+            end)
+        end
+    end,
+})
+
+local SpeedSlider = MainTab:CreateSlider({
     Name = "Collection Speed",
     Range = {0.1, 2},
     Increment = 0.05,
@@ -207,11 +334,12 @@ local SpeedSlider = MoneyTab:CreateSlider({
     end,
 })
 
-MoneyTab:CreateButton({
-    Name = "Reset Counter",
+MainTab:CreateButton({
+    Name = "Reset Money Counter",
     Callback = function()
         mc = 0
-        MoneyLabel:Set("Collected: 0")
+        dc = 0
+        MoneyLabel:Set("Collected: 0 | Donated: 0")
         Rayfield:Notify({
             Title = "Reset",
             Content = "Money counter reset!",
@@ -221,13 +349,12 @@ MoneyTab:CreateButton({
     end,
 })
 
--- NPC Tab
-local NPCTab = Window:CreateTab("🙏 NPC Farm", 4483362458)
-local NPCSection = NPCTab:CreateSection("NPC Begging")
+-- NPC Section
+local NPCSection = MainTab:CreateSection("🙏 NPC Begging")
 
-local NPCLabel = NPCTab:CreateLabel("Begged: 0")
+local NPCLabel = MainTab:CreateLabel("Begged: 0")
 
-local NPCToggle = NPCTab:CreateToggle({
+local NPCToggle = MainTab:CreateToggle({
     Name = "Auto Beg NPCs",
     CurrentValue = false,
     Flag = "NPCToggle",
@@ -268,7 +395,7 @@ local NPCToggle = NPCTab:CreateToggle({
     end,
 })
 
-local NPCSpeedSlider = NPCTab:CreateSlider({
+local NPCSpeedSlider = MainTab:CreateSlider({
     Name = "Begging Speed",
     Range = {0.1, 2},
     Increment = 0.05,
@@ -280,8 +407,8 @@ local NPCSpeedSlider = NPCTab:CreateSlider({
     end,
 })
 
-NPCTab:CreateButton({
-    Name = "Reset Counter",
+MainTab:CreateButton({
+    Name = "Reset NPC Counter",
     Callback = function()
         bc = 0
         NPCLabel:Set("Begged: 0")
@@ -365,8 +492,8 @@ SettingsTab:CreateButton({
 SettingsTab:CreateButton({
     Name = "Reset All Stats",
     Callback = function()
-        mc, bc = 0, 0
-        MoneyLabel:Set("Collected: 0")
+        mc, bc, dc = 0, 0, 0
+        MoneyLabel:Set("Collected: 0 | Donated: 0")
         NPCLabel:Set("Begged: 0")
         Rayfield:Notify({
             Title = "Reset Complete",
