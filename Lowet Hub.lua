@@ -1,7 +1,5 @@
-
-
 local games = {
-    [1234567890] = "https://raw.githubusercontent.com/RoyRedRedVN/script-own/main/plantbrainrot.lua"
+    [1234567890] = "https://raw.githubusercontent.com/RoyRedRedVN/script-own/refs/heads/main/Lowet%20Hub-(PlantVSZombie)"
 }
 
 local scriptLink = games[game.PlaceId]
