@@ -3,7 +3,7 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local Window = Rayfield:CreateWindow({
    Name = "Untitled Sans Battle",
    LoadingTitle = "Untitled Sans Battle Script",
-   LoadingSubtitle = "by Rayfield Interface",
+   LoadingSubtitle = "DEV: REDMOB",
    ConfigurationSaving = {
       Enabled = true,
       FolderName = nil,
@@ -29,12 +29,20 @@ local Window = Rayfield:CreateWindow({
 local MainTab = Window:CreateTab("Main", 4483362458)
 local MainSection = MainTab:CreateSection("Main")
 
+getgenv().SoulsCollected = 0
+
+local SoulsLabel = MainTab:CreateLabel("Souls Collected: 0")
+
 local AutofarmToggle = MainTab:CreateToggle({
    Name = "AutoFarm",
    CurrentValue = false,
    Flag = "AutofarmToggle",
    Callback = function(Value)
       getgenv().AutofarmToggle = Value
+      if Value then
+         getgenv().SoulsCollected = 0
+         SoulsLabel:Set("Souls Collected: 0")
+      end
       while getgenv().AutofarmToggle do 
          wait()
          pcall(function()
@@ -42,6 +50,8 @@ local AutofarmToggle = MainTab:CreateToggle({
                if v.Name == "Soul" and v.Parent:IsA("Model") then
                   firetouchinterest(v, game.Players.LocalPlayer.Character.HumanoidRootPart, 0)
                   firetouchinterest(v, game.Players.LocalPlayer.Character.HumanoidRootPart, 1)
+                  getgenv().SoulsCollected = getgenv().SoulsCollected + 1
+                  SoulsLabel:Set("Souls Collected: " .. getgenv().SoulsCollected)
                end
             end
          end)
