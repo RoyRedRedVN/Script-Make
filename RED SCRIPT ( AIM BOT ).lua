@@ -1,5 +1,6 @@
+-- +lua
 --!strict
--- ESP & Aimbot Script with Rayfield UI + Team Check
+-- Red Script - Aim Bot (V3) with Rayfield UI + Player Select + Amethyst Theme
 -- Optimized and cleaned version
 
 local Players = game:GetService("Players")
@@ -33,12 +34,15 @@ local Config = {
         ShowFOV = false,
         TargetPart = "Head",
         Smoothness = 0.5,
-        TeamCheck = false
+        TeamCheck = false,
+        TargetMode = "Closest", -- "Closest" or "Selected"
+        SelectedPlayer = nil
     }
 }
 
 -- ESP Objects Storage
 local ESPObjects = {}
+local SelectedPlayerHighlight = nil
 
 -- FOV Circle
 local FOVCircle = Drawing.new("Circle")
@@ -47,6 +51,14 @@ FOVCircle.NumSides = 100
 FOVCircle.Filled = false
 FOVCircle.Visible = false
 FOVCircle.Color = Color3.new(1, 1, 1)
+
+-- Selected Player Indicator
+local SelectedIndicator = Drawing.new("Circle")
+SelectedIndicator.Thickness = 3
+SelectedIndicator.NumSides = 50
+SelectedIndicator.Filled = false
+SelectedIndicator.Visible = false
+SelectedIndicator.Color = Color3.fromRGB(138, 43, 226) -- Purple
 
 -- Team Check Function
 local function IsTeammate(player)
@@ -64,24 +76,36 @@ local function GetTeamColor(player)
     return Config.ESP.BoxColor
 end
 
--- Create Rayfield Window
+-- Get Player List
+local function GetPlayerList()
+    local playerList = {}
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            table.insert(playerList, player.Name)
+        end
+    end
+    return playerList
+end
+
+-- Create Rayfield Window with Amethyst Theme
 local Window = Rayfield:CreateWindow({
-    Name = "whoamhoam v2.1 | Team Check Edition",
-    LoadingTitle = "Loading Script...",
-    LoadingSubtitle = "by whoamhoam",
+    Name = "💎 Red Script - Aim Bot (V3)",
+    LoadingTitle = "Red Script Loading...",
+    LoadingSubtitle = "Aim Bot V3 - Amethyst Edition",
     ConfigurationSaving = {
         Enabled = true,
-        FolderName = "whoamhoam_config",
-        FileName = "config"
+        FolderName = "RedScript_AimBot",
+        FileName = "config_v3"
     },
     Discord = {
         Enabled = false
     },
-    KeySystem = false
+    KeySystem = false,
+    Theme = "Amethyst"
 })
 
 -- ESP Tab
-local ESPTab = Window:CreateTab("🎯 ESP", nil)
+local ESPTab = Window:CreateTab("🎯 ESP", 4483362458)
 local ESPSection = ESPTab:CreateSection("ESP Settings")
 
 local ESPToggle = ESPTab:CreateToggle({
@@ -141,7 +165,7 @@ local SnaplineDropdown = ESPTab:CreateDropdown({
 
 local ESPColorPicker = ESPTab:CreateColorPicker({
     Name = "ESP Box Color",
-    Color = Color3.new(1, 0.3, 0.3),
+    Color = Color3.fromRGB(138, 43, 226),
     Flag = "ESPColor",
     Callback = function(v)
         Config.ESP.BoxColor = v
@@ -149,7 +173,7 @@ local ESPColorPicker = ESPTab:CreateColorPicker({
 })
 
 -- Aimbot Tab
-local AimbotTab = Window:CreateTab("🎮 Aimbot", nil)
+local AimbotTab = Window:CreateTab("🎮 Aimbot", 4483362458)
 local AimbotSection = AimbotTab:CreateSection("Aimbot Settings")
 
 local AimbotToggle = AimbotTab:CreateToggle({
@@ -169,6 +193,68 @@ local AimbotTeamCheck = AimbotTab:CreateToggle({
         Config.Aimbot.TeamCheck = v
     end
 })
+
+local TargetModeDropdown = AimbotTab:CreateDropdown({
+    Name = "Target Mode",
+    Options = {"Closest", "Selected Player"},
+    CurrentOption = "Closest",
+    Flag = "TargetMode",
+    Callback = function(v)
+        Config.Aimbot.TargetMode = v == "Closest" and "Closest" or "Selected"
+        if Config.Aimbot.TargetMode == "Closest" then
+            Config.Aimbot.SelectedPlayer = nil
+            SelectedIndicator.Visible = false
+        end
+    end
+})
+
+local PlayerSelectSection = AimbotTab:CreateSection("🎯 Player Selection")
+
+local PlayerSelectDropdown = AimbotTab:CreateDropdown({
+    Name = "Select Player to Target",
+    Options = GetPlayerList(),
+    CurrentOption = "None",
+    Flag = "SelectedPlayer",
+    Callback = function(v)
+        local targetPlayer = Players:FindFirstChild(v)
+        if targetPlayer then
+            Config.Aimbot.SelectedPlayer = targetPlayer
+            Rayfield:Notify({
+                Title = "Target Selected",
+                Content = "Now targeting: " .. v,
+                Duration = 3,
+                Image = 4483362458
+            })
+        end
+    end
+})
+
+AimbotTab:CreateButton({
+    Name = "🔄 Refresh Player List",
+    Callback = function()
+        PlayerSelectDropdown:Refresh(GetPlayerList())
+        Rayfield:Notify({
+            Title = "Refreshed",
+            Content = "Player list updated!",
+            Duration = 2
+        })
+    end
+})
+
+AimbotTab:CreateButton({
+    Name = "❌ Clear Target",
+    Callback = function()
+        Config.Aimbot.SelectedPlayer = nil
+        SelectedIndicator.Visible = false
+        Rayfield:Notify({
+            Title = "Target Cleared",
+            Content = "No player selected",
+            Duration = 2
+        })
+    end
+})
+
+local AimbotSettingsSection = AimbotTab:CreateSection("⚙️ Aimbot Configuration")
 
 local FOVToggle = AimbotTab:CreateToggle({
     Name = "Show FOV Circle",
@@ -204,7 +290,7 @@ local DistanceSlider = AimbotTab:CreateSlider({
 
 local TargetPartDropdown = AimbotTab:CreateDropdown({
     Name = "Target Part",
-    Options = {"Head", "Torso", "HumanoidRootPart"},
+    Options = {"Head", "Torso", "HumanoidRootPart", "UpperTorso", "LowerTorso"},
     CurrentOption = "Head",
     Flag = "TargetPart",
     Callback = function(v)
@@ -212,23 +298,63 @@ local TargetPartDropdown = AimbotTab:CreateDropdown({
     end
 })
 
+local SmoothnessSlider = AimbotTab:CreateSlider({
+    Name = "Smoothness",
+    Range = {0, 1},
+    Increment = 0.01,
+    CurrentValue = 0.5,
+    Flag = "Smoothness",
+    Callback = function(v)
+        Config.Aimbot.Smoothness = v
+    end
+})
+
 -- Info Tab
-local InfoTab = Window:CreateTab("ℹ️ Info", nil)
-local InfoSection = InfoTab:CreateSection("Information")
+local InfoTab = Window:CreateTab("ℹ️ Info", 4483362458)
+local InfoSection = InfoTab:CreateSection("📋 Script Information")
 
 InfoTab:CreateParagraph({
-    Title = "Script Info",
-    Content = "Red Script - Aim Bot v2.1\n\nFeatures:\n• ESP with team check\n• Aimbot with team check\n• Team color support\n• Rainbow mode\n• FOV circle\n• Customizable settings"
+    Title = "🔴 Red Script - Aim Bot (V3)",
+    Content = "Premium ESP & Aimbot Script\n\nVersion: 3.0\nTheme: Amethyst Edition\n\nFeatures:\n• Advanced ESP system\n• Smart aimbot with player selection\n• Team check support\n• Rainbow mode\n• FOV circle visualization\n• Smooth aiming algorithm\n• Beautiful Amethyst theme"
 })
 
 InfoTab:CreateParagraph({
-    Title = "Team Check",
-    Content = "When enabled:\n• ESP: Hides teammates\n• Aimbot: Won't target teammates\n• Team Colors: Shows player's team color"
+    Title = "🎯 Target Modes Explained",
+    Content = "Closest Mode:\n• Automatically aims at nearest player\n• Works within FOV radius\n• Respects max distance setting\n\nSelected Player Mode:\n• Lock onto specific player\n• Choose from dropdown menu\n• Purple circle indicates selection\n• Refresh list for new players"
+})
+
+InfoTab:CreateParagraph({
+    Title = "💜 Amethyst Theme",
+    Content = "Elegant purple color scheme inspired by amethyst crystal. Premium look and feel with smooth animations."
+})
+
+local CreditsSection = InfoTab:CreateSection("🎮 Controls & Credits")
+
+InfoTab:CreateParagraph({
+    Title = "⌨️ Controls",
+    Content = "Right Shift: Toggle UI visibility\nMouse: Aimbot (when enabled)\nESC: Close menu"
 })
 
 InfoTab:CreateButton({
-    Name = "Destroy GUI",
+    Name = "💎 Join Discord",
     Callback = function()
+        Rayfield:Notify({
+            Title = "Discord",
+            Content = "Discord support coming soon!",
+            Duration = 3
+        })
+    end
+})
+
+InfoTab:CreateButton({
+    Name = "🗑️ Unload Script",
+    Callback = function()
+        Rayfield:Notify({
+            Title = "Unloading...",
+            Content = "Red Script - Aim Bot V3 unloading",
+            Duration = 2
+        })
+        wait(2)
         Rayfield:Destroy()
         for _, esp in pairs(ESPObjects) do
             for _, obj in pairs(esp) do
@@ -236,7 +362,8 @@ InfoTab:CreateButton({
             end
         end
         FOVCircle:Remove()
-        print("Script unloaded!")
+        SelectedIndicator:Remove()
+        print("🔴 Red Script - Aim Bot (V3) unloaded successfully!")
     end
 })
 
@@ -268,12 +395,16 @@ local function CreateESP(player)
     esp.Distance.Center = true
     esp.Distance.Color = Config.ESP.DistanceColor
     esp.Distance.Visible = false
+    esp.Distance.Outline = true
+    esp.Distance.OutlineColor = Color3.new(0, 0, 0)
     
     -- Setup Name Text
     esp.Name.Size = 14
     esp.Name.Center = true
     esp.Name.Color = Color3.new(1, 1, 1)
     esp.Name.Visible = false
+    esp.Name.Outline = true
+    esp.Name.OutlineColor = Color3.new(0, 0, 0)
     
     -- Setup Snapline
     esp.Snapline.Thickness = 2
@@ -330,6 +461,14 @@ local function UpdateESP(player, esp)
         boxColor = GetTeamColor(player)
     end
     
+    -- Highlight selected player
+    if player == Config.Aimbot.SelectedPlayer then
+        boxColor = Color3.fromRGB(138, 43, 226) -- Amethyst purple
+        esp.Box.Thickness = 3
+    else
+        esp.Box.Thickness = 2
+    end
+    
     -- Update Box
     esp.Box.Size = Vector2.new(scale, scale * 1.5)
     esp.Box.Position = Vector2.new(pos.X - scale/2, pos.Y - scale * 0.75)
@@ -384,7 +523,7 @@ local function GetClosestPlayer()
             local targetPart = player.Character[Config.Aimbot.TargetPart]
             local dir = (targetPart.Position - Camera.CFrame.Position).Unit
             local lookDir = Camera.CFrame.LookVector
-            local angle = math.deg(math.acos(dir:Dot(lookDir)))
+            local angle = math.deg(math.acos(math.clamp(dir:Dot(lookDir), -1, 1)))
             
             if angle <= fov / 2 then
                 local dist = (Camera.CFrame.Position - targetPart.Position).Magnitude
@@ -415,7 +554,27 @@ RunService.RenderStepped:Connect(function()
     if Config.ESP.RainbowEnabled and Config.Aimbot.ShowFOV then
         FOVCircle.Color = Color3.fromHSV((tick() * 0.5) % 1, 1, 1)
     else
-        FOVCircle.Color = Color3.new(1, 1, 1)
+        FOVCircle.Color = Color3.fromRGB(138, 43, 226)
+    end
+    
+    -- Update Selected Player Indicator
+    if Config.Aimbot.SelectedPlayer and Config.Aimbot.SelectedPlayer.Character then
+        local head = Config.Aimbot.SelectedPlayer.Character:FindFirstChild("Head")
+        if head then
+            local pos, onScreen = Camera:WorldToViewportPoint(head.Position)
+            if onScreen then
+                local distance = (head.Position - Camera.CFrame.Position).Magnitude
+                local scale = 1000 / distance
+                SelectedIndicator.Position = Vector2.new(pos.X, pos.Y)
+                SelectedIndicator.Radius = scale * 0.8
+                SelectedIndicator.Visible = true
+                SelectedIndicator.Color = Color3.fromRGB(138, 43, 226)
+            else
+                SelectedIndicator.Visible = false
+            end
+        end
+    else
+        SelectedIndicator.Visible = false
     end
     
     -- Update ESP
@@ -425,9 +584,27 @@ RunService.RenderStepped:Connect(function()
     
     -- Aimbot
     if Config.Aimbot.Enabled then
-        local target = GetClosestPlayer()
+        local target = nil
+        
+        if Config.Aimbot.TargetMode == "Selected" and Config.Aimbot.SelectedPlayer then
+            target = Config.Aimbot.SelectedPlayer
+        else
+            target = GetClosestPlayer()
+        end
+        
         if target and target.Character and target.Character:FindFirstChild(Config.Aimbot.TargetPart) then
-            Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Character[Config.Aimbot.TargetPart].Position)
+            local targetPart = target.Character[Config.Aimbot.TargetPart]
+            local targetPos = targetPart.Position
+            
+            -- Smooth Aiming
+            if Config.Aimbot.Smoothness > 0 then
+                local currentLook = Camera.CFrame.LookVector
+                local targetLook = (targetPos - Camera.CFrame.Position).Unit
+                local smoothedLook = currentLook:Lerp(targetLook, 1 - Config.Aimbot.Smoothness)
+                Camera.CFrame = CFrame.new(Camera.CFrame.Position, Camera.CFrame.Position + smoothedLook)
+            else
+                Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPos)
+            end
         end
     end
 end)
@@ -441,6 +618,12 @@ end
 
 Players.PlayerAdded:Connect(function(player)
     CreateESP(player)
+    
+    -- Refresh player dropdown
+    task.wait(1)
+    if PlayerSelectDropdown then
+        PlayerSelectDropdown:Refresh(GetPlayerList())
+    end
 end)
 
 Players.PlayerRemoving:Connect(function(player)
@@ -450,14 +633,23 @@ Players.PlayerRemoving:Connect(function(player)
         end
         ESPObjects[player] = nil
     end
+    
+    -- Clear selected if removed player was selected
+    if Config.Aimbot.SelectedPlayer == player then
+        Config.Aimbot.SelectedPlayer = nil
+        SelectedIndicator.Visible = false
+    end
+    
+    -- Refresh player dropdown
+    if PlayerSelectDropdown then
+        PlayerSelectDropdown:Refresh(GetPlayerList())
+    end
 end)
 
 -- Notification
 Rayfield:Notify({
-    Title = "Script Loaded",
-    Content = "whoamhoam v2.1 with Team Check loaded!",
+    Title = "🔴 Red Script Loaded",
+    Content = "Aim Bot V3 - Amethyst Edition successfully loaded!",
     Duration = 5,
     Image = 4483362458
 })
-
-print("✅ Script successfully activated with Team Check!")
