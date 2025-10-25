@@ -1,63 +1,701 @@
---!strict Red V3 Extreme Compact
-local P,R,W,C,L=game:GetService("Players"),game:GetService("RunService"),workspace,W.CurrentCamera,P.LocalPlayer
-local RF=loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-local c={e={on=0,clr=Color3.fromRGB(138,43,226),tm=0,sn=1,rb=0,dst=1,hp=1,npc=1,sk=0,ch=0,hd=0,lk=0,gn=0,stl="Corner",fd=1,grd=0,anm=0},a={on=0,fov=30,dst=200,shw=0,cr=0,ctp="Cross",csz=10,cclr=Color3.fromRGB(255,255,255),pt="Head",sm=0.5,tm=0,md="Nearest",tg=nil,bh=0},l={on=0,dst=20,tm=1}}
-local ch,o,fv,sl,x={},{},Drawing.new("Circle"),Drawing.new("Circle"),{cr={},dt={},cc={},sq={},t={},xc={}}
-fv.Thickness,fv.NumSides,fv.Filled,sl.Thickness,sl.NumSides,sl.Filled=2,100,0,3,50,0
-for i=1,4 do x.cr[i]=Drawing.new("Line");x.cr[i].Thickness=2;x.sq[i]=Drawing.new("Line");x.sq[i].Thickness=2 end
-for i=1,3 do x.t[i]=Drawing.new("Line");x.t[i].Thickness=2 end
-for i=1,2 do x.xc[i]=Drawing.new("Line");x.xc[i].Thickness=3 end
-x.dt[1]=Drawing.new("Circle");x.dt[1].Radius,x.dt[1].Filled=2,1
-x.cc[1]=Drawing.new("Circle");x.cc[1].Radius,x.cc[1].Thickness=8,2
+--!strict
+-- Red V3 Extreme Compact - Rewritten Version (Full, No Abbreviations)
 
-local function tm(p)return L.Team and p.Team and L.Team==p.Team end
-local function tc(p)return p.Team and p.Team.TeamColor.Color or c.e.clr end
-local function pl()local t={}for _,p in P:GetPlayers()do if p~=L then table.insert(t,p.Name)end end return t end
-local function bh(ps)return c.a.bh==1 and C.CFrame.LookVector:Dot((ps-C.CFrame.Position).Unit)<0 end
-local function npc(m)if not m:IsA("Model")then return 0 end local h,r=m:FindFirstChildOfClass("Humanoid"),m:FindFirstChild("HumanoidRootPart")or m:FindFirstChild("Torso")if h and r and h.Health>0 then for _,p in P:GetPlayers()do if p.Character==m then return 0 end end return 1 end return 0 end
+local PlayersService = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local CurrentCamera = Workspace.CurrentCamera
+local LocalPlayer = PlayersService.LocalPlayer
 
-local w=RF:CreateWindow({Name="💎 Red V3",Theme="Amethyst"})
-local et=w:CreateTab("🎯 ESP")
-et:CreateToggle({Name="Enable",Callback=function(v)c.e.on=v and 1 or 0 end})
-et:CreateToggle({Name="NPCs",CurrentValue=1,Callback=function(v)c.e.npc=v and 1 or 0 end})
-et:CreateToggle({Name="Skeleton",Callback=function(v)c.e.sk=v and 1 or 0 end})
-et:CreateToggle({Name="Chams",Callback=function(v)c.e.ch=v and 1 or 0 end})
-et:CreateToggle({Name="Head",Callback=function(v)c.e.hd=v and 1 or 0 end})
-et:CreateToggle({Name="Look",Callback=function(v)c.e.lk=v and 1 or 0 end})
-et:CreateToggle({Name="Weapon",Callback=function(v)c.e.gn=v and 1 or 0 end})
-et:CreateToggle({Name="Tracers",CurrentValue=1,Callback=function(v)c.e.sn=v and 1 or 0 end})
-et:CreateToggle({Name="Rainbow",Callback=function(v)c.e.rb=v and 1 or 0 end})
-et:CreateDropdown({Name="Style",Options={"Corner","Full"},CurrentOption="Corner",Callback=function(v)c.e.stl=v end})
+local RayfieldLibrary = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
-local at=w:CreateTab("🎮 Aim")
-at:CreateToggle({Name="Enable",Callback=function(v)c.a.on=v and 1 or 0 end})
-at:CreateToggle({Name="FOV",Callback=function(v)c.a.shw=v and 1 or 0;fv.Visible=v end})
-at:CreateToggle({Name="Crosshair",Callback=function(v)c.a.cr=v and 1 or 0 end})
-at:CreateDropdown({Name="Type",Options={"Cross","Dot","Circle","Square","T","X","Dot+Circle","Cross+Dot","All"},CurrentOption="Cross",Callback=function(v)c.a.ctp=v end})
-at:CreateSlider({Name="Size",Range={5,30},Increment=1,CurrentValue=10,Callback=function(v)c.a.csz=v end})
-local md=at:CreateDropdown({Name="Mode",Options={"Nearest","Selected","NPCs"},CurrentOption="Nearest",Callback=function(v)c.a.md=v;if v~="Selected"then c.a.tg=nil;sl.Visible=0 end end})
-local ps=at:CreateDropdown({Name="Player",Options=pl(),Callback=function(v)local t=P:FindFirstChild(v)if t then c.a.tg=t;c.a.md="Selected";md:Set("Selected")end end})
-at:CreateButton({Name="🔄",Callback=function()ps:Refresh(pl())end})
-at:CreateButton({Name="❌",Callback=function()c.a.tg=nil;sl.Visible=0;c.a.md="Nearest";md:Set("Nearest")end})
-at:CreateSlider({Name="FOV",Range={10,100},Increment=1,CurrentValue=30,Callback=function(v)c.a.fov=v end})
-at:CreateSlider({Name="Smooth",Range={0,1},Increment=0.01,CurrentValue=0.5,Callback=function(v)c.a.sm=v end})
+local configurations = {
+    esp = {
+        enabled = 0,
+        color = Color3.fromRGB(138, 43, 226),
+        teamCheck = 0,
+        snaplines = 1,
+        rainbow = 0,
+        distance = 1,
+        healthPoints = 1,
+        npc = 1,
+        skeleton = 0,
+        chams = 0,
+        head = 0,
+        look = 0,
+        gun = 0,
+        style = "Corner",
+        fade = 1,
+        gradient = 0,
+        animation = 0
+    },
+    aim = {
+        enabled = 0,
+        fieldOfView = 30,
+        maximumDistance = 200,
+        showFieldOfView = 0,
+        crosshair = 0,
+        crosshairType = "Cross",
+        crosshairSize = 10,
+        crosshairColor = Color3.fromRGB(255, 255, 255),
+        part = "Head",
+        smooth = 0.5,
+        teamCheck = 0,
+        mode = "Nearest",
+        target = nil,
+        behind = 0
+    },
+    alert = {
+        enabled = 0,
+        distance = 20,
+        time = 1
+    }
+}
 
-local lt=w:CreateTab("⚠️")
-lt:CreateToggle({Name="Alert",Callback=function(v)c.l.on=v and 1 or 0 end})
-lt:CreateSlider({Name="Dist",Range={5,50},Increment=1,CurrentValue=20,Callback=function(v)c.l.dst=v end})
+local characters = {}
+local overlays = {}
+local fieldOfViewCircle = Drawing.new("Circle")
+local selectionCircle = Drawing.new("Circle")
+local crosshair = {cross = {}, dot = {}, circle = {}, square = {}, tShape = {}, xCross = {}}
 
-local function mk(t,n)if n==0 and t==L then return end local e={n=n}for _,p in{"TL","TR","BL","BR","T","B","L","R"}do e[p]=Drawing.new("Line");e[p].Thickness=2 end e.hb,e.hbb=Drawing.new("Square"),Drawing.new("Square")e.hbb.Filled,e.hbb.Color,e.hbb.Transparency,e.hb.Filled=1,Color3.new(0.1,0.1,0.1),0.5,1 for _,tx in{"nm","ds","hp","gn"}do e[tx]=Drawing.new("Text");e[tx].Center,e[tx].Outline,e[tx].Size=1,1,15 end e.hp.Center=0 e.sn=Drawing.new("Line");e.sn.Thickness=2 e.sk={}for i=1,10 do e.sk[i]=Drawing.new("Line");e.sk[i].Thickness=2 end e.hd=Drawing.new("Circle");e.hd.Filled,e.hd.NumSides=1,20 e.lk=Drawing.new("Line");e.lk.Thickness=3 if n==0 then e.hl=Instance.new("Highlight");e.hl.Enabled=0 end o[t]=e end
+fieldOfViewCircle.Thickness = 2
+fieldOfViewCircle.NumSides = 100
+fieldOfViewCircle.Filled = false
+selectionCircle.Thickness = 3
+selectionCircle.NumSides = 50
+selectionCircle.Filled = false
 
-local function up(t,e)local ch=e.n==1 and t or t.Character if c.e.on==0 or not ch or(e.n==1 and c.e.npc==0)or(e.n==0 and c.e.tm==1 and tm(t))then for _,ob in pairs(e)do if typeof(ob)=="table"then for _,s in pairs(ob)do s.Visible=0 end elseif typeof(ob)~="boolean"and ob~=e.hl then ob.Visible=0 end end if e.hl then e.hl.Enabled=0 end return end local h,r,hd=ch:FindFirstChildOfClass("Humanoid"),ch:FindFirstChild("HumanoidRootPart")or ch:FindFirstChild("Torso"),ch:FindFirstChild("Head")if not h or h.Health<=0 or not r or not hd then for _,ob in pairs(e)do if typeof(ob)=="table"then for _,s in pairs(ob)do s.Visible=0 end elseif typeof(ob)~="boolean"and ob~=e.hl then ob.Visible=0 end end if e.hl then e.hl.Enabled=0 end return end local tp,bp=hd.Position+Vector3.new(0,hd.Size.Y/2,0),r.Position-Vector3.new(0,r.Size.Y/2+2,0)local ts,tv=C:WorldToViewportPoint(tp)local bs,bv=C:WorldToViewportPoint(bp)local rs,rv=C:WorldToViewportPoint(r.Position)if not tv and not bv and not rv then for _,ob in pairs(e)do if typeof(ob)=="table"then for _,s in pairs(ob)do s.Visible=0 end elseif typeof(ob)~="boolean"and ob~=e.hl then ob.Visible=0 end end if e.hl then e.hl.Enabled=0 end return end local d=(r.Position-C.CFrame.Position).Magnitude local bh,bw=math.abs(ts.Y-bs.Y),math.abs(ts.Y-bs.Y)*0.55 local bx,by=rs.X-bw/2,ts.Y local cr=math.min(bw*0.15,bh*0.08)local a=c.e.fd==1 and math.clamp(1-(d/c.a.dst),0.3,1)or 1 local clr=e.n==1 and Color3.fromRGB(255,100,50)or(c.e.rb==1 and Color3.fromHSV((tick()*0.5)%1,1,1)or tc(t))if e.n==0 and t==c.a.tg then clr=Color3.fromRGB(255,0,255)end if c.e.stl=="Corner"then e.TL.From,e.TL.To=Vector2.new(bx+cr,by),Vector2.new(bx,by+cr)e.TR.From,e.TR.To=Vector2.new(bx+bw-cr,by),Vector2.new(bx+bw,by+cr)e.BL.From,e.BL.To=Vector2.new(bx,by+bh-cr),Vector2.new(bx+cr,by+bh)e.BR.From,e.BR.To=Vector2.new(bx+bw-cr,by+bh),Vector2.new(bx+bw,by+bh-cr)e.T.From,e.T.To=Vector2.new(bx+cr,by),Vector2.new(bx+bw-cr,by)e.B.From,e.B.To=Vector2.new(bx+cr,by+bh),Vector2.new(bx+bw-cr,by+bh)e.L.From,e.L.To=Vector2.new(bx,by+cr),Vector2.new(bx,by+bh-cr)e.R.From,e.R.To=Vector2.new(bx+bw,by+cr),Vector2.new(bx+bw,by+bh-cr)for _,p in{"TL","TR","BL","BR","T","B","L","R"}do e[p].Color,e[p].Transparency,e[p].Visible=clr,a,1 end else e.T.From,e.T.To=Vector2.new(bx,by),Vector2.new(bx+bw,by)e.B.From,e.B.To=Vector2.new(bx,by+bh),Vector2.new(bx+bw,by+bh)e.L.From,e.L.To=Vector2.new(bx,by),Vector2.new(bx,by+bh)e.R.From,e.R.To=Vector2.new(bx+bw,by),Vector2.new(bx+bw,by+bh)for _,p in{"T","B","L","R"}do e[p].Color,e[p].Transparency,e[p].Visible=clr,a,1 end for _,p in{"TL","TR","BL","BR"}do e[p].Visible=0 end end if c.e.sk==1 then local bn={{ch:FindFirstChild("Head"),ch:FindFirstChild("UpperTorso")or r},{ch:FindFirstChild("UpperTorso")or r,ch:FindFirstChild("LeftUpperArm")},{ch:FindFirstChild("UpperTorso")or r,ch:FindFirstChild("RightUpperArm")},{ch:FindFirstChild("LeftUpperArm"),ch:FindFirstChild("LeftHand")},{ch:FindFirstChild("RightUpperArm"),ch:FindFirstChild("RightHand")},{ch:FindFirstChild("LowerTorso")or r,ch:FindFirstChild("LeftUpperLeg")},{ch:FindFirstChild("LowerTorso")or r,ch:FindFirstChild("RightUpperLeg")},{ch:FindFirstChild("LeftUpperLeg"),ch:FindFirstChild("LeftFoot")},{ch:FindFirstChild("RightUpperLeg"),ch:FindFirstChild("RightFoot")},{ch:FindFirstChild("UpperTorso")or r,ch:FindFirstChild("LowerTorso")or r}}for i,b in pairs(bn)do if b[1]and b[2]then local p1,v1=C:WorldToViewportPoint(b[1].Position)local p2,v2=C:WorldToViewportPoint(b[2].Position)if v1 or v2 then e.sk[i].From,e.sk[i].To,e.sk[i].Color,e.sk[i].Transparency,e.sk[i].Visible=Vector2.new(p1.X,p1.Y),Vector2.new(p2.X,p2.Y),clr,a,1 else e.sk[i].Visible=0 end else e.sk[i].Visible=0 end end else for _,s in pairs(e.sk)do s.Visible=0 end end if c.e.hd==1 then local hp,hv=C:WorldToViewportPoint(hd.Position)if hv then e.hd.Position,e.hd.Radius,e.hd.Color,e.hd.Transparency,e.hd.Visible=Vector2.new(hp.X,hp.Y),3,Color3.fromRGB(255,0,0),a,1 else e.hd.Visible=0 end else e.hd.Visible=0 end if c.e.lk==1 then local le=hd.Position+hd.CFrame.LookVector*50 local ls,lv=C:WorldToViewportPoint(le)local hs,hv2=C:WorldToViewportPoint(hd.Position)if hv2 and lv then e.lk.From,e.lk.To,e.lk.Color,e.lk.Transparency,e.lk.Visible=Vector2.new(hs.X,hs.Y),Vector2.new(ls.X,ls.Y),Color3.fromRGB(255,255,0),a,1 else e.lk.Visible=0 end else e.lk.Visible=0 end if e.hl and c.e.ch==1 then e.hl.Parent,e.hl.Enabled,e.hl.FillColor,e.hl.OutlineColor,e.hl.FillTransparency=ch,1,clr,clr,0.5*(1-a)elseif e.hl then e.hl.Enabled=0 end local hp=h.Health/h.MaxHealth local hw,hx=4,bx-10 e.hbb.Size,e.hbb.Position,e.hbb.Transparency,e.hbb.Visible=Vector2.new(hw,bh),Vector2.new(hx,by),a,c.e.hp==1 local hh=bh*hp e.hb.Size,e.hb.Position,e.hb.Color=Vector2.new(hw,hh),Vector2.new(hx,by+(bh-hh)),hp>0.6 and Color3.fromRGB(0,255,0)or(hp>0.3 and Color3.fromRGB(255,255,0)or Color3.fromRGB(255,0,0))e.hb.Transparency,e.hb.Visible=a,c.e.hp==1 e.hp.Text,e.hp.Position,e.hp.Color,e.hp.Transparency,e.hp.Visible=string.format("%d",math.floor(h.Health)),Vector2.new(hx-2,by+bh+2),e.hb.Color,a,c.e.hp==1 local nm=e.n==1 and(ch.Name.." [NPC]")or t.Name e.nm.Text,e.nm.Position,e.nm.Color,e.nm.Transparency,e.nm.Visible=nm,Vector2.new(rs.X,by-18),clr,a,1 e.ds.Text,e.ds.Position,e.ds.Transparency,e.ds.Visible=string.format("%dm",math.floor(d)),Vector2.new(rs.X,by+bh+5),a,c.e.dst==1 if c.e.gn==1 and e.n==0 then local tl=ch:FindFirstChildOfClass("Tool")if tl then e.gn.Text,e.gn.Position,e.gn.Color,e.gn.Transparency,e.gn.Visible="🔫 "..tl.Name,Vector2.new(rs.X,by+bh+22),Color3.fromRGB(255,200,0),a,1 else e.gn.Visible=0 end else e.gn.Visible=0 end if c.e.sn==1 then local sy=C.ViewportSize.Y/2 e.sn.From,e.sn.To=Vector2.new(rs.X,by+bh),Vector2.new(C.ViewportSize.X/2,sy)e.sn.Color=c.e.grd==1 and Color3.fromHSV((d/c.a.dst)*0.3,1,1)or clr e.sn.Transparency=c.e.anm==1 and math.abs(math.sin(tick()*2))*a or a e.sn.Visible=1 else e.sn.Visible=0 end end
+for index = 1, 4 do
+    crosshair.cross[index] = Drawing.new("Line")
+    crosshair.cross[index].Thickness = 2
+    crosshair.square[index] = Drawing.new("Line")
+    crosshair.square[index].Thickness = 2
+end
 
-local function tg()local cl,md=nil,math.huge if c.a.md=="Selected"and c.a.tg then local p=c.a.tg if p.Character and p.Character:FindFirstChild(c.a.pt)then local pt=p.Character[c.a.pt]if not bh(pt.Position)then local dr=(pt.Position-C.CFrame.Position).Unit local ag=math.deg(math.acos(math.clamp(dr:Dot(C.CFrame.LookVector),-1,1)))local ds=(C.CFrame.Position-pt.Position).Magnitude if ag<=c.a.fov/2 and ds<=c.a.dst then return p.Character end end end end if c.a.md=="Nearest"then for _,p in P:GetPlayers()do if(c.a.tm==1 and tm(p))or p==L then continue end if p.Character and p.Character:FindFirstChild(c.a.pt)then local pt=p.Character[c.a.pt]if not bh(pt.Position)then local dr=(pt.Position-C.CFrame.Position).Unit local ag=math.deg(math.acos(math.clamp(dr:Dot(C.CFrame.LookVector),-1,1)))if ag<=c.a.fov/2 then local ds=(C.CFrame.Position-pt.Position).Magnitude if ds<=c.a.dst and ds<md then cl,md=p.Character,ds end end end end end end if c.a.md=="NPCs"then for _,m in W:GetDescendants()do if m:IsA("Model")and npc(m)==1 then local pt=m:FindFirstChild(c.a.pt)or m:FindFirstChild("Head")or m:FindFirstChild("HumanoidRootPart")if pt and not bh(pt.Position)then local dr=(pt.Position-C.CFrame.Position).Unit local ag=math.deg(math.acos(math.clamp(dr:Dot(C.CFrame.LookVector),-1,1)))if ag<=c.a.fov/2 then local ds=(C.CFrame.Position-pt.Position).Magnitude if ds<=c.a.dst and ds<md then cl,md=m,ds end end end end end end return cl end
+for index = 1, 3 do
+    crosshair.tShape[index] = Drawing.new("Line")
+    crosshair.tShape[index].Thickness = 2
+end
 
-local function drw(cx,cy,sz,clr)for _,g in pairs(x)do for _,j in pairs(g)do j.Visible=0 end end local t=c.a.ctp if t=="Cross"or t=="Cross+Dot"or t=="All"then for _,l in pairs(x.cr)do l.Color=clr end x.cr[1].From,x.cr[1].To=Vector2.new(cx,cy-5),Vector2.new(cx,cy-5-sz)x.cr[2].From,x.cr[2].To=Vector2.new(cx,cy+5),Vector2.new(cx,cy+5+sz)x.cr[3].From,x.cr[3].To=Vector2.new(cx-5,cy),Vector2.new(cx-5-sz,cy)x.cr[4].From,x.cr[4].To=Vector2.new(cx+5,cy),Vector2.new(cx+5+sz,cy)for _,l in pairs(x.cr)do l.Visible=1 end end if t=="Dot"or t=="Dot+Circle"or t=="Cross+Dot"or t=="All"then x.dt[1].Position,x.dt[1].Color,x.dt[1].Visible=Vector2.new(cx,cy),clr,1 end if t=="Circle"or t=="Dot+Circle"or t=="All"then x.cc[1].Position,x.cc[1].Radius,x.cc[1].Color,x.cc[1].Visible=Vector2.new(cx,cy),sz*0.8,clr,1 end if t=="Square"or t=="All"then local s=sz*0.7 x.sq[1].From,x.sq[1].To=Vector2.new(cx-s,cy-s),Vector2.new(cx+s,cy-s)x.sq[2].From,x.sq[2].To=Vector2.new(cx+s,cy-s),Vector2.new(cx+s,cy+s)x.sq[3].From,x.sq[3].To=Vector2.new(cx+s,cy+s),Vector2.new(cx-s,cy+s)x.sq[4].From,x.sq[4].To=Vector2.new(cx-s,cy+s),Vector2.new(cx-s,cy-s)for _,l in pairs(x.sq)do l.Color,l.Visible=clr,1 end end if t=="T"or t=="All"then x.t[1].From,x.t[1].To=Vector2.new(cx-sz,cy-sz),Vector2.new(cx+sz,cy-sz)x.t[2].From,x.t[2].To=Vector2.new(cx,cy-sz),Vector2.new(cx,cy+sz)x.t[3].From,x.t[3].To=Vector2.new(cx,cy),Vector2.new(cx,cy+sz*1.5)for _,l in pairs(x.t)do l.Color,l.Visible=clr,1 end end if t=="X"or t=="All"then x.xc[1].From,x.xc[1].To=Vector2.new(cx-sz,cy-sz),Vector2.new(cx+sz,cy+sz)x.xc[2].From,x.xc[2].To=Vector2.new(cx+sz,cy-sz),Vector2.new(cx-sz,cy+sz)for _,l in pairs(x.xc)do l.Color,l.Visible=clr,1 end end end
+for index = 1, 2 do
+    crosshair.xCross[index] = Drawing.new("Line")
+    crosshair.xCross[index].Thickness = 3
+end
 
-local lc,nu=0,0
-R.RenderStepped:Connect(function()local cx,cy=C.ViewportSize.X/2,C.ViewportSize.Y/2 if c.l.on==1 and tick()-lc>=c.l.tm then lc=tick()local cam,lk=C.CFrame.Position,C.CFrame.LookVector for _,p in P:GetPlayers()do if p~=L and p.Character then local r=p.Character:FindFirstChild("HumanoidRootPart")if r then local d=(cam-r.Position).Magnitude if d<=c.l.dst and lk:Dot((r.Position-cam).Unit)<-0.3 then if not ch[p.Name]then ch[p.Name]=1 RF:Notify({Title="⚠️",Content=p.Name.." Behind!",Duration=2})task.delay(3,function()ch[p.Name]=nil end)end end end end end end fv.Radius,fv.Position=(c.a.fov/2)*(C.ViewportSize.Y/90),Vector2.new(cx,cy)fv.Visible,fv.Color=c.a.shw==1,c.e.rb==1 and Color3.fromHSV((tick()*0.5)%1,1,1)or Color3.fromRGB(138,43,226)if c.a.cr==1 then drw(cx,cy,c.a.csz,c.a.cclr)else for _,g in pairs(x)do for _,j in pairs(g)do j.Visible=0 end end end if c.a.tg and c.a.tg.Character then local hd=c.a.tg.Character:FindFirstChild("Head")if hd then local ps,pv=C:WorldToViewportPoint(hd.Position)if pv then sl.Position,sl.Radius,sl.Color,sl.Visible=Vector2.new(ps.X,ps.Y),math.clamp(1000/(hd.Position-C.CFrame.Position).Magnitude*0.8,20,80),Color3.fromRGB(255,0,255),1 else sl.Visible=0 end end else sl.Visible=0 end for p,e in pairs(o)do if e.n==0 then up(p,e)end end nu=nu+1 if nu>=30 and c.e.npc==1 then nu=0 for m,e in pairs(o)do if e.n==1 then if npc(m)==0 then for _,ob in pairs(e)do if typeof(ob)=="table"then for _,s in pairs(ob)do pcall(function()s:Remove()end)end elseif typeof(ob)~="boolean"and ob~=e.hl then pcall(function()ob:Remove()end)end end o[m]=nil else up(m,e)end end end for _,m in W:GetDescendants()do if m:IsA("Model")and npc(m)==1 and not o[m]then mk(m,1)end end end if c.a.on==1 then local tr=tg()if tr then local pt=tr:FindFirstChild(c.a.pt)or tr:FindFirstChild("Head")or tr:FindFirstChild("HumanoidRootPart")if pt then local tp=pt.Position if c.a.sm>0 then local sm=C.CFrame.LookVector:Lerp((tp-C.CFrame.Position).Unit,1-c.a.sm)C.CFrame=CFrame.new(C.CFrame.Position,C.CFrame.Position+sm)else C.CFrame=CFrame.new(C.CFrame.Position,tp)end end end end end)
+crosshair.dot[1] = Drawing.new("Circle")
+crosshair.dot[1].Radius = 2
+crosshair.dot[1].Filled = true
 
-for _,p in P:GetPlayers()do if p~=L then mk(p,0)end end
-P.PlayerAdded:Connect(function(p)mk(p,0)task.wait(1)ps:Refresh(pl())end)
-P.PlayerRemoving:Connect(function(p)if o[p]then for _,ob in pairs(o[p])do pcall(function()if typeof(ob)~="boolean"and ob~=o[p].hl then ob:Remove()end end)end o[p]=nil end if c.a.tg==p then c.a.tg=nil;sl.Visible=0;c.a.md="Nearest"end ps:Refresh(pl())end)
-RF:Notify({Title="💎 Red V3",Content="Loaded!",Duration=3})
+crosshair.circle[1] = Drawing.new("Circle")
+crosshair.circle[1].Radius = 8
+crosshair.circle[1].Thickness = 2
+
+local function isOnSameTeam(player)
+    return LocalPlayer.Team and player.Team and LocalPlayer.Team == player.Team
+end
+
+local function getTeamColor(player)
+    return player.Team and player.Team.TeamColor.Color or configurations.esp.color
+end
+
+local function getPlayerNames()
+    local names = {}
+    for _, player in PlayersService:GetPlayers() do
+        if player ~= LocalPlayer then
+            table.insert(names, player.Name)
+        end
+    end
+    return names
+end
+
+local function isBehind(position)
+    return configurations.aim.behind == 1 and CurrentCamera.CFrame.LookVector:Dot((position - CurrentCamera.CFrame.Position).Unit) < 0
+end
+
+local function isNpc(model)
+    if not model:IsA("Model") then
+        return 0
+    end
+    local humanoid = model:FindFirstChildOfClass("Humanoid")
+    local rootPart = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Torso")
+    if humanoid and rootPart and humanoid.Health > 0 then
+        for _, player in PlayersService:GetPlayers() do
+            if player.Character == model then
+                return 0
+            end
+        end
+        return 1
+    end
+    return 0
+end
+
+local window = RayfieldLibrary:CreateWindow({Name = "💎 Red V3", Theme = "Amethyst"})
+
+local espTab = window:CreateTab("🎯 ESP")
+espTab:CreateToggle({Name = "Enable", Callback = function(value) configurations.esp.enabled = value and 1 or 0 end})
+espTab:CreateToggle({Name = "NPCs", CurrentValue = true, Callback = function(value) configurations.esp.npc = value and 1 or 0 end})
+espTab:CreateToggle({Name = "Skeleton", Callback = function(value) configurations.esp.skeleton = value and 1 or 0 end})
+espTab:CreateToggle({Name = "Chams", Callback = function(value) configurations.esp.chams = value and 1 or 0 end})
+espTab:CreateToggle({Name = "Head", Callback = function(value) configurations.esp.head = value and 1 or 0 end})
+espTab:CreateToggle({Name = "Look", Callback = function(value) configurations.esp.look = value and 1 or 0 end})
+espTab:CreateToggle({Name = "Weapon", Callback = function(value) configurations.esp.gun = value and 1 or 0 end})
+espTab:CreateToggle({Name = "Tracers", CurrentValue = true, Callback = function(value) configurations.esp.snaplines = value and 1 or 0 end})
+espTab:CreateToggle({Name = "Rainbow", Callback = function(value) configurations.esp.rainbow = value and 1 or 0 end})
+espTab:CreateDropdown({Name = "Style", Options = {"Corner", "Full"}, CurrentOption = "Corner", Callback = function(value) configurations.esp.style = value end})
+
+local aimTab = window:CreateTab("🎮 Aim")
+aimTab:CreateToggle({Name = "Enable", Callback = function(value) configurations.aim.enabled = value and 1 or 0 end})
+aimTab:CreateToggle({Name = "FOV", Callback = function(value) configurations.aim.showFieldOfView = value and 1 or 0; fieldOfViewCircle.Visible = value end})
+aimTab:CreateToggle({Name = "Crosshair", Callback = function(value) configurations.aim.crosshair = value and 1 or 0 end})
+aimTab:CreateDropdown({Name = "Type", Options = {"Cross", "Dot", "Circle", "Square", "T", "X", "Dot+Circle", "Cross+Dot", "All"}, CurrentOption = "Cross", Callback = function(value) configurations.aim.crosshairType = value end})
+aimTab:CreateSlider({Name = "Size", Range = {5, 30}, Increment = 1, CurrentValue = 10, Callback = function(value) configurations.aim.crosshairSize = value end})
+local modeDropdown = aimTab:CreateDropdown({Name = "Mode", Options = {"Nearest", "Selected", "NPCs"}, CurrentOption = "Nearest", Callback = function(value) configurations.aim.mode = value; if value ~= "Selected" then configurations.aim.target = nil; selectionCircle.Visible = false end end})
+local playerDropdown = aimTab:CreateDropdown({Name = "Player", Options = getPlayerNames(), Callback = function(value) local targetPlayer = PlayersService:FindFirstChild(value); if targetPlayer then configurations.aim.target = targetPlayer; configurations.aim.mode = "Selected"; modeDropdown:Set("Selected") end end})
+aimTab:CreateButton({Name = "🔄", Callback = function() playerDropdown:Refresh(getPlayerNames()) end})
+aimTab:CreateButton({Name = "❌", Callback = function() configurations.aim.target = nil; selectionCircle.Visible = false; configurations.aim.mode = "Nearest"; modeDropdown:Set("Nearest") end})
+aimTab:CreateSlider({Name = "FOV", Range = {10, 100}, Increment = 1, CurrentValue = 30, Callback = function(value) configurations.aim.fieldOfView = value end})
+aimTab:CreateSlider({Name = "Smooth", Range = {0, 1}, Increment = 0.01, CurrentValue = 0.5, Callback = function(value) configurations.aim.smooth = value end})
+
+local alertTab = window:CreateTab("⚠️")
+alertTab:CreateToggle({Name = "Alert", Callback = function(value) configurations.alert.enabled = value and 1 or 0 end})
+alertTab:CreateSlider({Name = "Dist", Range = {5, 50}, Increment = 1, CurrentValue = 20, Callback = function(value) configurations.alert.distance = value end})
+
+local function makeOverlay(target, npcFlag)
+    if npcFlag == 0 and target == LocalPlayer then
+        return
+    end
+    local entry = {npc = npcFlag}
+    for _, part in {"TopLeft", "TopRight", "BottomLeft", "BottomRight", "Top", "Bottom", "Left", "Right"} do
+        entry[part] = Drawing.new("Line")
+        entry[part].Thickness = 2
+    end
+    entry.healthBar = Drawing.new("Square")
+    entry.healthBarBackground = Drawing.new("Square")
+    entry.healthBarBackground.Filled = true
+    entry.healthBarBackground.Color = Color3.new(0.1, 0.1, 0.1)
+    entry.healthBarBackground.Transparency = 0.5
+    entry.healthBar.Filled = true
+    for _, textType in {"name", "distance", "healthPoints", "gun"} do
+        entry[textType] = Drawing.new("Text")
+        entry[textType].Center = true
+        entry[textType].Outline = true
+        entry[textType].Size = 15
+    end
+    entry.healthPoints.Center = false
+    entry.snapline = Drawing.new("Line")
+    entry.snapline.Thickness = 2
+    entry.skeleton = {}
+    for index = 1, 10 do
+        entry.skeleton[index] = Drawing.new("Line")
+        entry.skeleton[index].Thickness = 2
+    end
+    entry.head = Drawing.new("Circle")
+    entry.head.Filled = true
+    entry.head.NumSides = 20
+    entry.look = Drawing.new("Line")
+    entry.look.Thickness = 3
+    if npcFlag == 0 then
+        entry.highlight = Instance.new("Highlight")
+        entry.highlight.Enabled = false
+    end
+    overlays[target] = entry
+end
+
+local function updateOverlay(target, entry)
+    local character = entry.npc == 1 and target or target.Character
+    if configurations.esp.enabled == 0 or not character or (entry.npc == 1 and configurations.esp.npc == 0) or (entry.npc == 0 and configurations.esp.teamCheck == 1 and isOnSameTeam(target)) then
+        for _, object in pairs(entry) do
+            if typeof(object) == "table" then
+                for _, sub in pairs(object) do
+                    sub.Visible = false
+                end
+            elseif typeof(object) ~= "boolean" and object ~= entry.highlight then
+                object.Visible = false
+            end
+        end
+        if entry.highlight then
+            entry.highlight.Enabled = false
+        end
+        return
+    end
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    local rootPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso")
+    local head = character:FindFirstChild("Head")
+    if not humanoid or humanoid.Health <= 0 or not rootPart or not head then
+        for _, object in pairs(entry) do
+            if typeof(object) == "table" then
+                for _, sub in pairs(object) do
+                    sub.Visible = false
+                end
+            elseif typeof(object) ~= "boolean" and object ~= entry.highlight then
+                object.Visible = false
+            end
+        end
+        if entry.highlight then
+            entry.highlight.Enabled = false
+        end
+        return
+    end
+    local topPosition = head.Position + Vector3.new(0, head.Size.Y / 2, 0)
+    local bottomPosition = rootPart.Position - Vector3.new(0, rootPart.Size.Y / 2 + 2, 0)
+    local topScreen, topVisible = CurrentCamera:WorldToViewportPoint(topPosition)
+    local bottomScreen, bottomVisible = CurrentCamera:WorldToViewportPoint(bottomPosition)
+    local rootScreen, rootVisible = CurrentCamera:WorldToViewportPoint(rootPart.Position)
+    if not topVisible and not bottomVisible and not rootVisible then
+        for _, object in pairs(entry) do
+            if typeof(object) == "table" then
+                for _, sub in pairs(object) do
+                    sub.Visible = false
+                end
+            elseif typeof(object) ~= "boolean" and object ~= entry.highlight then
+                object.Visible = false
+            end
+        end
+        if entry.highlight then
+            entry.highlight.Enabled = false
+        end
+        return
+    end
+    local distance = (rootPart.Position - CurrentCamera.CFrame.Position).Magnitude
+    local boxHeight = math.abs(topScreen.Y - bottomScreen.Y)
+    local boxWidth = boxHeight * 0.55
+    local boxX = rootScreen.X - boxWidth / 2
+    local boxY = topScreen.Y
+    local cornerRadius = math.min(boxWidth * 0.15, boxHeight * 0.08)
+    local alpha = configurations.esp.fade == 1 and math.clamp(1 - (distance / configurations.aim.maximumDistance), 0.3, 1) or 1
+    local color = entry.npc == 1 and Color3.fromRGB(255, 100, 50) or (configurations.esp.rainbow == 1 and Color3.fromHSV((tick() * 0.5) % 1, 1, 1) or getTeamColor(target))
+    if entry.npc == 0 and target == configurations.aim.target then
+        color = Color3.fromRGB(255, 0, 255)
+    end
+    if configurations.esp.style == "Corner" then
+        entry.TopLeft.From = Vector2.new(boxX + cornerRadius, boxY)
+        entry.TopLeft.To = Vector2.new(boxX, boxY + cornerRadius)
+        entry.TopRight.From = Vector2.new(boxX + boxWidth - cornerRadius, boxY)
+        entry.TopRight.To = Vector2.new(boxX + boxWidth, boxY + cornerRadius)
+        entry.BottomLeft.From = Vector2.new(boxX, boxY + boxHeight - cornerRadius)
+        entry.BottomLeft.To = Vector2.new(boxX + cornerRadius, boxY + boxHeight)
+        entry.BottomRight.From = Vector2.new(boxX + boxWidth - cornerRadius, boxY + boxHeight)
+        entry.BottomRight.To = Vector2.new(boxX + boxWidth, boxY + boxHeight - cornerRadius)
+        entry.Top.From = Vector2.new(boxX + cornerRadius, boxY)
+        entry.Top.To = Vector2.new(boxX + boxWidth - cornerRadius, boxY)
+        entry.Bottom.From = Vector2.new(boxX + cornerRadius, boxY + boxHeight)
+        entry.Bottom.To = Vector2.new(boxX + boxWidth - cornerRadius, boxY + boxHeight)
+        entry.Left.From = Vector2.new(boxX, boxY + cornerRadius)
+        entry.Left.To = Vector2.new(boxX, boxY + boxHeight - cornerRadius)
+        entry.Right.From = Vector2.new(boxX + boxWidth, boxY + cornerRadius)
+        entry.Right.To = Vector2.new(boxX + boxWidth, boxY + boxHeight - cornerRadius)
+        for _, part in {"TopLeft", "TopRight", "BottomLeft", "BottomRight", "Top", "Bottom", "Left", "Right"} do
+            entry[part].Color = color
+            entry[part].Transparency = alpha
+            entry[part].Visible = true
+        end
+    else
+        entry.Top.From = Vector2.new(boxX, boxY)
+        entry.Top.To = Vector2.new(boxX + boxWidth, boxY)
+        entry.Bottom.From = Vector2.new(boxX, boxY + boxHeight)
+        entry.Bottom.To = Vector2.new(boxX + boxWidth, boxY + boxHeight)
+        entry.Left.From = Vector2.new(boxX, boxY)
+        entry.Left.To = Vector2.new(boxX, boxY + boxHeight)
+        entry.Right.From = Vector2.new(boxX + boxWidth, boxY)
+        entry.Right.To = Vector2.new(boxX + boxWidth, boxY + boxHeight)
+        for _, part in {"Top", "Bottom", "Left", "Right"} do
+            entry[part].Color = color
+            entry[part].Transparency = alpha
+            entry[part].Visible = true
+        end
+        for _, part in {"TopLeft", "TopRight", "BottomLeft", "BottomRight"} do
+            entry[part].Visible = false
+        end
+    end
+    if configurations.esp.skeleton == 1 then
+        local bones = {
+            {character:FindFirstChild("Head"), character:FindFirstChild("UpperTorso") or rootPart},
+            {character:FindFirstChild("UpperTorso") or rootPart, character:FindFirstChild("LeftUpperArm")},
+            {character:FindFirstChild("UpperTorso") or rootPart, character:FindFirstChild("RightUpperArm")},
+            {character:FindFirstChild("LeftUpperArm"), character:FindFirstChild("LeftHand")},
+            {character:FindFirstChild("RightUpperArm"), character:FindFirstChild("RightHand")},
+            {character:FindFirstChild("LowerTorso") or rootPart, character:FindFirstChild("LeftUpperLeg")},
+            {character:FindFirstChild("LowerTorso") or rootPart, character:FindFirstChild("RightUpperLeg")},
+            {character:FindFirstChild("LeftUpperLeg"), character:FindFirstChild("LeftFoot")},
+            {character:FindFirstChild("RightUpperLeg"), character:FindFirstChild("RightFoot")},
+            {character:FindFirstChild("UpperTorso") or rootPart, character:FindFirstChild("LowerTorso") or rootPart}
+        }
+        for index, bone in pairs(bones) do
+            if bone[1] and bone[2] then
+                local position1, visible1 = CurrentCamera:WorldToViewportPoint(bone[1].Position)
+                local position2, visible2 = CurrentCamera:WorldToViewportPoint(bone[2].Position)
+                if visible1 or visible2 then
+                    entry.skeleton[index].From = Vector2.new(position1.X, position1.Y)
+                    entry.skeleton[index].To = Vector2.new(position2.X, position2.Y)
+                    entry.skeleton[index].Color = color
+                    entry.skeleton[index].Transparency = alpha
+                    entry.skeleton[index].Visible = true
+                else
+                    entry.skeleton[index].Visible = false
+                end
+            else
+                entry.skeleton[index].Visible = false
+            end
+        end
+    else
+        for _, skeletonLine in pairs(entry.skeleton) do
+            skeletonLine.Visible = false
+        end
+    end
+    if configurations.esp.head == 1 then
+        local headPosition, headVisible = CurrentCamera:WorldToViewportPoint(head.Position)
+        if headVisible then
+            entry.head.Position = Vector2.new(headPosition.X, headPosition.Y)
+            entry.head.Radius = 3
+            entry.head.Color = Color3.fromRGB(255, 0, 0)
+            entry.head.Transparency = alpha
+            entry.head.Visible = true
+        else
+            entry.head.Visible = false
+        end
+    else
+        entry.head.Visible = false
+    end
+    if configurations.esp.look == 1 then
+        local lookEnd = head.Position + head.CFrame.LookVector * 50
+        local lookScreen, lookVisible = CurrentCamera:WorldToViewportPoint(lookEnd)
+        local headScreen, headVisible2 = CurrentCamera:WorldToViewportPoint(head.Position)
+        if headVisible2 and lookVisible then
+            entry.look.From = Vector2.new(headScreen.X, headScreen.Y)
+            entry.look.To = Vector2.new(lookScreen.X, lookScreen.Y)
+            entry.look.Color = Color3.fromRGB(255, 255, 0)
+            entry.look.Transparency = alpha
+            entry.look.Visible = true
+        else
+            entry.look.Visible = false
+        end
+    else
+        entry.look.Visible = false
+    end
+    if entry.highlight and configurations.esp.chams == 1 then
+        entry.highlight.Parent = character
+        entry.highlight.Enabled = true
+        entry.highlight.FillColor = color
+        entry.highlight.OutlineColor = color
+        entry.highlight.FillTransparency = 0.5 * (1 - alpha)
+    elseif entry.highlight then
+        entry.highlight.Enabled = false
+    end
+    local healthPercentage = humanoid.Health / humanoid.MaxHealth
+    local healthWidth = 4
+    local healthX = boxX - 10
+    entry.healthBarBackground.Size = Vector2.new(healthWidth, boxHeight)
+    entry.healthBarBackground.Position = Vector2.new(healthX, boxY)
+    entry.healthBarBackground.Transparency = alpha
+    entry.healthBarBackground.Visible = configurations.esp.healthPoints == 1
+    local healthHeight = boxHeight * healthPercentage
+    entry.healthBar.Size = Vector2.new(healthWidth, healthHeight)
+    entry.healthBar.Position = Vector2.new(healthX, boxY + (boxHeight - healthHeight))
+    entry.healthBar.Color = healthPercentage > 0.6 and Color3.fromRGB(0, 255, 0) or (healthPercentage > 0.3 and Color3.fromRGB(255, 255, 0) or Color3.fromRGB(255, 0, 0))
+    entry.healthBar.Transparency = alpha
+    entry.healthBar.Visible = configurations.esp.healthPoints == 1
+    entry.healthPoints.Text = string.format("%d", math.floor(humanoid.Health))
+    entry.healthPoints.Position = Vector2.new(healthX - 2, boxY + boxHeight + 2)
+    entry.healthPoints.Color = entry.healthBar.Color
+    entry.healthPoints.Transparency = alpha
+    entry.healthPoints.Visible = configurations.esp.healthPoints == 1
+    local name = entry.npc == 1 and (character.Name .. " [NPC]") or target.Name
+    entry.name.Text = name
+    entry.name.Position = Vector2.new(rootScreen.X, boxY - 18)
+    entry.name.Color = color
+    entry.name.Transparency = alpha
+    entry.name.Visible = true
+    entry.distance.Text = string.format("%dm", math.floor(distance))
+    entry.distance.Position = Vector2.new(rootScreen.X, boxY + boxHeight + 5)
+    entry.distance.Transparency = alpha
+    entry.distance.Visible = configurations.esp.distance == 1
+    if configurations.esp.gun == 1 and entry.npc == 0 then
+        local tool = character:FindFirstChildOfClass("Tool")
+        if tool then
+            entry.gun.Text = "🔫 " .. tool.Name
+            entry.gun.Position = Vector2.new(rootScreen.X, boxY + boxHeight + 22)
+            entry.gun.Color = Color3.fromRGB(255, 200, 0)
+            entry.gun.Transparency = alpha
+            entry.gun.Visible = true
+        else
+            entry.gun.Visible = false
+        end
+    else
+        entry.gun.Visible = false
+    end
+    if configurations.esp.snaplines == 1 then
+        local screenY = CurrentCamera.ViewportSize.Y / 2
+        entry.snapline.From = Vector2.new(rootScreen.X, boxY + boxHeight)
+        entry.snapline.To = Vector2.new(CurrentCamera.ViewportSize.X / 2, screenY)
+        entry.snapline.Color = configurations.esp.gradient == 1 and Color3.fromHSV((distance / configurations.aim.maximumDistance) * 0.3, 1, 1) or color
+        entry.snapline.Transparency = configurations.esp.animation == 1 and math.abs(math.sin(tick() * 2)) * alpha or alpha
+        entry.snapline.Visible = true
+    else
+        entry.snapline.Visible = false
+    end
+end
+
+local function getTarget()
+    local closest = nil
+    local minDistance = math.huge
+    if configurations.aim.mode == "Selected" and configurations.aim.target then
+        local player = configurations.aim.target
+        if player.Character and player.Character:FindFirstChild(configurations.aim.part) then
+            local part = player.Character[configurations.aim.part]
+            if not isBehind(part.Position) then
+                local direction = (part.Position - CurrentCamera.CFrame.Position).Unit
+                local angle = math.deg(math.acos(math.clamp(direction:Dot(CurrentCamera.CFrame.LookVector), -1, 1)))
+                local distance = (CurrentCamera.CFrame.Position - part.Position).Magnitude
+                if angle <= configurations.aim.fieldOfView / 2 and distance <= configurations.aim.maximumDistance then
+                    return player.Character
+                end
+            end
+        end
+    end
+    if configurations.aim.mode == "Nearest" then
+        for _, player in PlayersService:GetPlayers() do
+            if (configurations.aim.teamCheck == 1 and isOnSameTeam(player)) or player == LocalPlayer then
+                continue
+            end
+            if player.Character and player.Character:FindFirstChild(configurations.aim.part) then
+                local part = player.Character[configurations.aim.part]
+                if not isBehind(part.Position) then
+                    local direction = (part.Position - CurrentCamera.CFrame.Position).Unit
+                    local angle = math.deg(math.acos(math.clamp(direction:Dot(CurrentCamera.CFrame.LookVector), -1, 1)))
+                    if angle <= configurations.aim.fieldOfView / 2 then
+                        local distance = (CurrentCamera.CFrame.Position - part.Position).Magnitude
+                        if distance <= configurations.aim.maximumDistance and distance < minDistance then
+                            closest = player.Character
+                            minDistance = distance
+                        end
+                    end
+                end
+            end
+        end
+    end
+    if configurations.aim.mode == "NPCs" then
+        for _, model in Workspace:GetDescendants() do
+            if model:IsA("Model") and isNpc(model) == 1 then
+                local part = model:FindFirstChild(configurations.aim.part) or model:FindFirstChild("Head") or model:FindFirstChild("HumanoidRootPart")
+                if part and not isBehind(part.Position) then
+                    local direction = (part.Position - CurrentCamera.CFrame.Position).Unit
+                    local angle = math.deg(math.acos(math.clamp(direction:Dot(CurrentCamera.CFrame.LookVector), -1, 1)))
+                    if angle <= configurations.aim.fieldOfView / 2 then
+                        local distance = (CurrentCamera.CFrame.Position - part.Position).Magnitude
+                        if distance <= configurations.aim.maximumDistance and distance < minDistance then
+                            closest = model
+                            minDistance = distance
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return closest
+end
+
+local function drawCrosshair(centerX, centerY, size, color)
+    for _, group in pairs(crosshair) do
+        for _, item in pairs(group) do
+            item.Visible = false
+        end
+    end
+    local type = configurations.aim.crosshairType
+    if type == "Cross" or type == "Cross+Dot" or type == "All" then
+        for _, line in pairs(crosshair.cross) do
+            line.Color = color
+        end
+        crosshair.cross[1].From = Vector2.new(centerX, centerY - 5)
+        crosshair.cross[1].To = Vector2.new(centerX, centerY - 5 - size)
+        crosshair.cross[2].From = Vector2.new(centerX, centerY + 5)
+        crosshair.cross[2].To = Vector2.new(centerX, centerY + 5 + size)
+        crosshair.cross[3].From = Vector2.new(centerX - 5, centerY)
+        crosshair.cross[3].To = Vector2.new(centerX - 5 - size, centerY)
+        crosshair.cross[4].From = Vector2.new(centerX + 5, centerY)
+        crosshair.cross[4].To = Vector2.new(centerX + 5 + size, centerY)
+        for _, line in pairs(crosshair.cross) do
+            line.Visible = true
+        end
+    end
+    if type == "Dot" or type == "Dot+Circle" or type == "Cross+Dot" or type == "All" then
+        crosshair.dot[1].Position = Vector2.new(centerX, centerY)
+        crosshair.dot[1].Color = color
+        crosshair.dot[1].Visible = true
+    end
+    if type == "Circle" or type == "Dot+Circle" or type == "All" then
+        crosshair.circle[1].Position = Vector2.new(centerX, centerY)
+        crosshair.circle[1].Radius = size * 0.8
+        crosshair.circle[1].Color = color
+        crosshair.circle[1].Visible = true
+    end
+    if type == "Square" or type == "All" then
+        local squareSize = size * 0.7
+        crosshair.square[1].From = Vector2.new(centerX - squareSize, centerY - squareSize)
+        crosshair.square[1].To = Vector2.new(centerX + squareSize, centerY - squareSize)
+        crosshair.square[2].From = Vector2.new(centerX + squareSize, centerY - squareSize)
+        crosshair.square[2].To = Vector2.new(centerX + squareSize, centerY + squareSize)
+        crosshair.square[3].From = Vector2.new(centerX + squareSize, centerY + squareSize)
+        crosshair.square[3].To = Vector2.new(centerX - squareSize, centerY + squareSize)
+        crosshair.square[4].From = Vector2.new(centerX - squareSize, centerY + squareSize)
+        crosshair.square[4].To = Vector2.new(centerX - squareSize, centerY - squareSize)
+        for _, line in pairs(crosshair.square) do
+            line.Color = color
+            line.Visible = true
+        end
+    end
+    if type == "T" or type == "All" then
+        crosshair.tShape[1].From = Vector2.new(centerX - size, centerY - size)
+        crosshair.tShape[1].To = Vector2.new(centerX + size, centerY - size)
+        crosshair.tShape[2].From = Vector2.new(centerX, centerY - size)
+        crosshair.tShape[2].To = Vector2.new(centerX, centerY + size)
+        crosshair.tShape[3].From = Vector2.new(centerX, centerY)
+        crosshair.tShape[3].To = Vector2.new(centerX, centerY + size * 1.5)
+        for _, line in pairs(crosshair.tShape) do
+            line.Color = color
+            line.Visible = true
+        end
+    end
+    if type == "X" or type == "All" then
+        crosshair.xCross[1].From = Vector2.new(centerX - size, centerY - size)
+        crosshair.xCross[1].To = Vector2.new(centerX + size, centerY + size)
+        crosshair.xCross[2].From = Vector2.new(centerX + size, centerY - size)
+        crosshair.xCross[2].To = Vector2.new(centerX - size, centerY + size)
+        for _, line in pairs(crosshair.xCross) do
+            line.Color = color
+            line.Visible = true
+        end
+    end
+end
+
+local lastCheck = 0
+local npcUpdateCounter = 0
+RunService.RenderStepped:Connect(function()
+    local centerX = CurrentCamera.ViewportSize.X / 2
+    local centerY = CurrentCamera.ViewportSize.Y / 2
+    if configurations.alert.enabled == 1 and tick() - lastCheck >= configurations.alert.time then
+        lastCheck = tick()
+        local cameraPosition = CurrentCamera.CFrame.Position
+        local lookVector = CurrentCamera.CFrame.LookVector
+        for _, player in PlayersService:GetPlayers() do
+            if player ~= LocalPlayer and player.Character then
+                local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
+                if rootPart then
+                    local distance = (cameraPosition - rootPart.Position).Magnitude
+                    if distance <= configurations.alert.distance and lookVector:Dot((rootPart.Position - cameraPosition).Unit) < -0.3 then
+                        if not characters[player.Name] then
+                            characters[player.Name] = true
+                            RayfieldLibrary:Notify({Title = "⚠️", Content = player.Name .. " Behind!", Duration = 2})
+                            task.delay(3, function() characters[player.Name] = nil end)
+                        end
+                    end
+                end
+            end
+        end
+    end
+    fieldOfViewCircle.Radius = (configurations.aim.fieldOfView / 2) * (CurrentCamera.ViewportSize.Y / 90)
+    fieldOfViewCircle.Position = Vector2.new(centerX, centerY)
+    fieldOfViewCircle.Visible = configurations.aim.showFieldOfView == 1
+    fieldOfViewCircle.Color = configurations.esp.rainbow == 1 and Color3.fromHSV((tick() * 0.5) % 1, 1, 1) or Color3.fromRGB(138, 43, 226)
+    if configurations.aim.crosshair == 1 then
+        drawCrosshair(centerX, centerY, configurations.aim.crosshairSize, configurations.aim.crosshairColor)
+    else
+        for _, group in pairs(crosshair) do
+            for _, item in pairs(group) do
+                item.Visible = false
+            end
+        end
+    end
+    if configurations.aim.target and configurations.aim.target.Character then
+        local head = configurations.aim.target.Character:FindFirstChild("Head")
+        if head then
+            local position, visible = CurrentCamera:WorldToViewportPoint(head.Position)
+            if visible then
+                selectionCircle.Position = Vector2.new(position.X, position.Y)
+                selectionCircle.Radius = math.clamp(1000 / (head.Position - CurrentCamera.CFrame.Position).Magnitude * 0.8, 20, 80)
+                selectionCircle.Color = Color3.fromRGB(255, 0, 255)
+                selectionCircle.Visible = true
+            else
+                selectionCircle.Visible = false
+            end
+        end
+    else
+        selectionCircle.Visible = false
+    end
+    for player, entry in pairs(overlays) do
+        if entry.npc == 0 then
+            updateOverlay(player, entry)
+        end
+    end
+    npcUpdateCounter = npcUpdateCounter + 1
+    if npcUpdateCounter >= 30 and configurations.esp.npc == 1 then
+        npcUpdateCounter = 0
+        for model, entry in pairs(overlays) do
+            if entry.npc == 1 then
+                if isNpc(model) == 0 then
+                    for _, object in pairs(entry) do
+                        if typeof(object) == "table" then
+                            for _, sub in pairs(object) do
+                                pcall(function() sub:Remove() end)
+                            end
+                        elseif typeof(object) ~= "boolean" and object ~= entry.highlight then
+                            pcall(function() object:Remove() end)
+                        end
+                    end
+                    overlays[model] = nil
+                else
+                    updateOverlay(model, entry)
+                end
+            end
+        end
+        for _, model in Workspace:GetDescendants() do
+            if model:IsA("Model") and isNpc(model) == 1 and not overlays[model] then
+                makeOverlay(model, 1)
+            end
+        end
+    end
+    if configurations.aim.enabled == 1 then
+        local target = getTarget()
+        if target then
+            local part = target:FindFirstChild(configurations.aim.part) or target:FindFirstChild("Head") or target:FindFirstChild("HumanoidRootPart")
+            if part then
+                local targetPosition = part.Position
+                if configurations.aim.smooth > 0 then
+                    local smoothed = CurrentCamera.CFrame.LookVector:Lerp((targetPosition - CurrentCamera.CFrame.Position).Unit, 1 - configurations.aim.smooth)
+                    CurrentCamera.CFrame = CFrame.new(CurrentCamera.CFrame.Position, CurrentCamera.CFrame.Position + smoothed)
+                else
+                    CurrentCamera.CFrame = CFrame.new(CurrentCamera.CFrame.Position, targetPosition)
+                end
+            end
+        end
+    end
+end)
+
+for _, player in PlayersService:GetPlayers() do
+    if player ~= LocalPlayer then
+        makeOverlay(player, 0)
+    end
+end
+PlayersService.PlayerAdded:Connect(function(player)
+    makeOverlay(player, 0)
+    task.wait(1)
+    playerDropdown:Refresh(getPlayerNames())
+end)
+PlayersService.PlayerRemoving:Connect(function(player)
+    if overlays[player] then
+        for _, object in pairs(overlays[player]) do
+            pcall(function()
+                if typeof(object) ~= "boolean" and object ~= overlays[player].highlight then
+                    object:Remove()
+                end
+            end)
+        end
+        overlays[player] = nil
+    end
+    if configurations.aim.target == player then
+        configurations.aim.target = nil
+        selectionCircle.Visible = false
+        configurations.aim.mode = "Nearest"
+    end
+    playerDropdown:Refresh(getPlayerNames())
+end)
+RayfieldLibrary:Notify({Title = "💎 Red V3", Content = "Loaded!", Duration = 3})
