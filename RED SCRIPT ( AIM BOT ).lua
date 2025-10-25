@@ -1,567 +1,63 @@
---!strict
--- Red Script - Aim Bot V3 + NPC Auto Aim + Advanced Targeting
-local Players, RunService, Workspace = game:GetService("Players"), game:GetService("RunService"), workspace
-local Camera, LocalPlayer = Workspace.CurrentCamera, Players.LocalPlayer
+--!strict Red V3 Extreme Compact
+local P,R,W,C,L=game:GetService("Players"),game:GetService("RunService"),workspace,W.CurrentCamera,P.LocalPlayer
+local RF=loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local c={e={on=0,clr=Color3.fromRGB(138,43,226),tm=0,sn=1,rb=0,dst=1,hp=1,npc=1,sk=0,ch=0,hd=0,lk=0,gn=0,stl="Corner",fd=1,grd=0,anm=0},a={on=0,fov=30,dst=200,shw=0,cr=0,ctp="Cross",csz=10,cclr=Color3.fromRGB(255,255,255),pt="Head",sm=0.5,tm=0,md="Nearest",tg=nil,bh=0},l={on=0,dst=20,tm=1}}
+local ch,o,fv,sl,x={},{},Drawing.new("Circle"),Drawing.new("Circle"),{cr={},dt={},cc={},sq={},t={},xc={}}
+fv.Thickness,fv.NumSides,fv.Filled,sl.Thickness,sl.NumSides,sl.Filled=2,100,0,3,50,0
+for i=1,4 do x.cr[i]=Drawing.new("Line");x.cr[i].Thickness=2;x.sq[i]=Drawing.new("Line");x.sq[i].Thickness=2 end
+for i=1,3 do x.t[i]=Drawing.new("Line");x.t[i].Thickness=2 end
+for i=1,2 do x.xc[i]=Drawing.new("Line");x.xc[i].Thickness=3 end
+x.dt[1]=Drawing.new("Circle");x.dt[1].Radius,x.dt[1].Filled=2,1
+x.cc[1]=Drawing.new("Circle");x.cc[1].Radius,x.cc[1].Thickness=8,2
 
--- Load UI
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local function tm(p)return L.Team and p.Team and L.Team==p.Team end
+local function tc(p)return p.Team and p.Team.TeamColor.Color or c.e.clr end
+local function pl()local t={}for _,p in P:GetPlayers()do if p~=L then table.insert(t,p.Name)end end return t end
+local function bh(ps)return c.a.bh==1 and C.CFrame.LookVector:Dot((ps-C.CFrame.Position).Unit)<0 end
+local function npc(m)if not m:IsA("Model")then return 0 end local h,r=m:FindFirstChildOfClass("Humanoid"),m:FindFirstChild("HumanoidRootPart")or m:FindFirstChild("Torso")if h and r and h.Health>0 then for _,p in P:GetPlayers()do if p.Character==m then return 0 end end return 1 end return 0 end
 
--- Config
-local Config = {
-    ESP = {Enabled = false, BoxColor = Color3.fromRGB(138, 43, 226), GradientColor = Color3.fromRGB(255, 100, 255),
-        SnaplineEnabled = true, SnaplinePosition = "Center", RainbowEnabled = false, GradientEnabled = false,
-        ShowDistance = true, ShowHealth = true, TeamCheck = false, TeamColor = true, ShowNPCs = true},
-    Aimbot = {Enabled = false, FOV = 30, MaxDistance = 200, ShowFOV = false, ShowCrosshair = false,
-        CrosshairSize = 10, CrosshairThickness = 2, CrosshairColor = Color3.fromRGB(255, 255, 255),
-        TargetPart = "Head", Smoothness = 0.5, TeamCheck = false, 
-        TargetMode = "Nearest Player", -- "Nearest Player", "Selected Player", "NPCs Only"
-        SelectedPlayer = nil, IgnoreBehind = false},
-    BehindAlert = {Enabled = false, AlertDistance = 20, CheckInterval = 1, SoundAlert = false}
-}
+local w=RF:CreateWindow({Name="💎 Red V3",Theme="Amethyst"})
+local et=w:CreateTab("🎯 ESP")
+et:CreateToggle({Name="Enable",Callback=function(v)c.e.on=v and 1 or 0 end})
+et:CreateToggle({Name="NPCs",CurrentValue=1,Callback=function(v)c.e.npc=v and 1 or 0 end})
+et:CreateToggle({Name="Skeleton",Callback=function(v)c.e.sk=v and 1 or 0 end})
+et:CreateToggle({Name="Chams",Callback=function(v)c.e.ch=v and 1 or 0 end})
+et:CreateToggle({Name="Head",Callback=function(v)c.e.hd=v and 1 or 0 end})
+et:CreateToggle({Name="Look",Callback=function(v)c.e.lk=v and 1 or 0 end})
+et:CreateToggle({Name="Weapon",Callback=function(v)c.e.gn=v and 1 or 0 end})
+et:CreateToggle({Name="Tracers",CurrentValue=1,Callback=function(v)c.e.sn=v and 1 or 0 end})
+et:CreateToggle({Name="Rainbow",Callback=function(v)c.e.rb=v and 1 or 0 end})
+et:CreateDropdown({Name="Style",Options={"Corner","Full"},CurrentOption="Corner",Callback=function(v)c.e.stl=v end})
 
-local behindAlertCache = {}
-local lastBehindCheck = 0
+local at=w:CreateTab("🎮 Aim")
+at:CreateToggle({Name="Enable",Callback=function(v)c.a.on=v and 1 or 0 end})
+at:CreateToggle({Name="FOV",Callback=function(v)c.a.shw=v and 1 or 0;fv.Visible=v end})
+at:CreateToggle({Name="Crosshair",Callback=function(v)c.a.cr=v and 1 or 0 end})
+at:CreateDropdown({Name="Type",Options={"Cross","Dot","Circle","Square","T","X","Dot+Circle","Cross+Dot","All"},CurrentOption="Cross",Callback=function(v)c.a.ctp=v end})
+at:CreateSlider({Name="Size",Range={5,30},Increment=1,CurrentValue=10,Callback=function(v)c.a.csz=v end})
+local md=at:CreateDropdown({Name="Mode",Options={"Nearest","Selected","NPCs"},CurrentOption="Nearest",Callback=function(v)c.a.md=v;if v~="Selected"then c.a.tg=nil;sl.Visible=0 end end})
+local ps=at:CreateDropdown({Name="Player",Options=pl(),Callback=function(v)local t=P:FindFirstChild(v)if t then c.a.tg=t;c.a.md="Selected";md:Set("Selected")end end})
+at:CreateButton({Name="🔄",Callback=function()ps:Refresh(pl())end})
+at:CreateButton({Name="❌",Callback=function()c.a.tg=nil;sl.Visible=0;c.a.md="Nearest";md:Set("Nearest")end})
+at:CreateSlider({Name="FOV",Range={10,100},Increment=1,CurrentValue=30,Callback=function(v)c.a.fov=v end})
+at:CreateSlider({Name="Smooth",Range={0,1},Increment=0.01,CurrentValue=0.5,Callback=function(v)c.a.sm=v end})
 
-local ESPObjects = {}
+local lt=w:CreateTab("⚠️")
+lt:CreateToggle({Name="Alert",Callback=function(v)c.l.on=v and 1 or 0 end})
+lt:CreateSlider({Name="Dist",Range={5,50},Increment=1,CurrentValue=20,Callback=function(v)c.l.dst=v end})
 
--- Drawing Objects
-local FOVCircle = Drawing.new("Circle")
-FOVCircle.Thickness, FOVCircle.NumSides, FOVCircle.Filled, FOVCircle.Visible = 2, 100, false, false
+local function mk(t,n)if n==0 and t==L then return end local e={n=n}for _,p in{"TL","TR","BL","BR","T","B","L","R"}do e[p]=Drawing.new("Line");e[p].Thickness=2 end e.hb,e.hbb=Drawing.new("Square"),Drawing.new("Square")e.hbb.Filled,e.hbb.Color,e.hbb.Transparency,e.hb.Filled=1,Color3.new(0.1,0.1,0.1),0.5,1 for _,tx in{"nm","ds","hp","gn"}do e[tx]=Drawing.new("Text");e[tx].Center,e[tx].Outline,e[tx].Size=1,1,15 end e.hp.Center=0 e.sn=Drawing.new("Line");e.sn.Thickness=2 e.sk={}for i=1,10 do e.sk[i]=Drawing.new("Line");e.sk[i].Thickness=2 end e.hd=Drawing.new("Circle");e.hd.Filled,e.hd.NumSides=1,20 e.lk=Drawing.new("Line");e.lk.Thickness=3 if n==0 then e.hl=Instance.new("Highlight");e.hl.Enabled=0 end o[t]=e end
 
-local Crosshair = {Drawing.new("Line"), Drawing.new("Line"), Drawing.new("Line"), Drawing.new("Line")}
-for _, line in pairs(Crosshair) do line.Thickness, line.Visible = 2, false end
+local function up(t,e)local ch=e.n==1 and t or t.Character if c.e.on==0 or not ch or(e.n==1 and c.e.npc==0)or(e.n==0 and c.e.tm==1 and tm(t))then for _,ob in pairs(e)do if typeof(ob)=="table"then for _,s in pairs(ob)do s.Visible=0 end elseif typeof(ob)~="boolean"and ob~=e.hl then ob.Visible=0 end end if e.hl then e.hl.Enabled=0 end return end local h,r,hd=ch:FindFirstChildOfClass("Humanoid"),ch:FindFirstChild("HumanoidRootPart")or ch:FindFirstChild("Torso"),ch:FindFirstChild("Head")if not h or h.Health<=0 or not r or not hd then for _,ob in pairs(e)do if typeof(ob)=="table"then for _,s in pairs(ob)do s.Visible=0 end elseif typeof(ob)~="boolean"and ob~=e.hl then ob.Visible=0 end end if e.hl then e.hl.Enabled=0 end return end local tp,bp=hd.Position+Vector3.new(0,hd.Size.Y/2,0),r.Position-Vector3.new(0,r.Size.Y/2+2,0)local ts,tv=C:WorldToViewportPoint(tp)local bs,bv=C:WorldToViewportPoint(bp)local rs,rv=C:WorldToViewportPoint(r.Position)if not tv and not bv and not rv then for _,ob in pairs(e)do if typeof(ob)=="table"then for _,s in pairs(ob)do s.Visible=0 end elseif typeof(ob)~="boolean"and ob~=e.hl then ob.Visible=0 end end if e.hl then e.hl.Enabled=0 end return end local d=(r.Position-C.CFrame.Position).Magnitude local bh,bw=math.abs(ts.Y-bs.Y),math.abs(ts.Y-bs.Y)*0.55 local bx,by=rs.X-bw/2,ts.Y local cr=math.min(bw*0.15,bh*0.08)local a=c.e.fd==1 and math.clamp(1-(d/c.a.dst),0.3,1)or 1 local clr=e.n==1 and Color3.fromRGB(255,100,50)or(c.e.rb==1 and Color3.fromHSV((tick()*0.5)%1,1,1)or tc(t))if e.n==0 and t==c.a.tg then clr=Color3.fromRGB(255,0,255)end if c.e.stl=="Corner"then e.TL.From,e.TL.To=Vector2.new(bx+cr,by),Vector2.new(bx,by+cr)e.TR.From,e.TR.To=Vector2.new(bx+bw-cr,by),Vector2.new(bx+bw,by+cr)e.BL.From,e.BL.To=Vector2.new(bx,by+bh-cr),Vector2.new(bx+cr,by+bh)e.BR.From,e.BR.To=Vector2.new(bx+bw-cr,by+bh),Vector2.new(bx+bw,by+bh-cr)e.T.From,e.T.To=Vector2.new(bx+cr,by),Vector2.new(bx+bw-cr,by)e.B.From,e.B.To=Vector2.new(bx+cr,by+bh),Vector2.new(bx+bw-cr,by+bh)e.L.From,e.L.To=Vector2.new(bx,by+cr),Vector2.new(bx,by+bh-cr)e.R.From,e.R.To=Vector2.new(bx+bw,by+cr),Vector2.new(bx+bw,by+bh-cr)for _,p in{"TL","TR","BL","BR","T","B","L","R"}do e[p].Color,e[p].Transparency,e[p].Visible=clr,a,1 end else e.T.From,e.T.To=Vector2.new(bx,by),Vector2.new(bx+bw,by)e.B.From,e.B.To=Vector2.new(bx,by+bh),Vector2.new(bx+bw,by+bh)e.L.From,e.L.To=Vector2.new(bx,by),Vector2.new(bx,by+bh)e.R.From,e.R.To=Vector2.new(bx+bw,by),Vector2.new(bx+bw,by+bh)for _,p in{"T","B","L","R"}do e[p].Color,e[p].Transparency,e[p].Visible=clr,a,1 end for _,p in{"TL","TR","BL","BR"}do e[p].Visible=0 end end if c.e.sk==1 then local bn={{ch:FindFirstChild("Head"),ch:FindFirstChild("UpperTorso")or r},{ch:FindFirstChild("UpperTorso")or r,ch:FindFirstChild("LeftUpperArm")},{ch:FindFirstChild("UpperTorso")or r,ch:FindFirstChild("RightUpperArm")},{ch:FindFirstChild("LeftUpperArm"),ch:FindFirstChild("LeftHand")},{ch:FindFirstChild("RightUpperArm"),ch:FindFirstChild("RightHand")},{ch:FindFirstChild("LowerTorso")or r,ch:FindFirstChild("LeftUpperLeg")},{ch:FindFirstChild("LowerTorso")or r,ch:FindFirstChild("RightUpperLeg")},{ch:FindFirstChild("LeftUpperLeg"),ch:FindFirstChild("LeftFoot")},{ch:FindFirstChild("RightUpperLeg"),ch:FindFirstChild("RightFoot")},{ch:FindFirstChild("UpperTorso")or r,ch:FindFirstChild("LowerTorso")or r}}for i,b in pairs(bn)do if b[1]and b[2]then local p1,v1=C:WorldToViewportPoint(b[1].Position)local p2,v2=C:WorldToViewportPoint(b[2].Position)if v1 or v2 then e.sk[i].From,e.sk[i].To,e.sk[i].Color,e.sk[i].Transparency,e.sk[i].Visible=Vector2.new(p1.X,p1.Y),Vector2.new(p2.X,p2.Y),clr,a,1 else e.sk[i].Visible=0 end else e.sk[i].Visible=0 end end else for _,s in pairs(e.sk)do s.Visible=0 end end if c.e.hd==1 then local hp,hv=C:WorldToViewportPoint(hd.Position)if hv then e.hd.Position,e.hd.Radius,e.hd.Color,e.hd.Transparency,e.hd.Visible=Vector2.new(hp.X,hp.Y),3,Color3.fromRGB(255,0,0),a,1 else e.hd.Visible=0 end else e.hd.Visible=0 end if c.e.lk==1 then local le=hd.Position+hd.CFrame.LookVector*50 local ls,lv=C:WorldToViewportPoint(le)local hs,hv2=C:WorldToViewportPoint(hd.Position)if hv2 and lv then e.lk.From,e.lk.To,e.lk.Color,e.lk.Transparency,e.lk.Visible=Vector2.new(hs.X,hs.Y),Vector2.new(ls.X,ls.Y),Color3.fromRGB(255,255,0),a,1 else e.lk.Visible=0 end else e.lk.Visible=0 end if e.hl and c.e.ch==1 then e.hl.Parent,e.hl.Enabled,e.hl.FillColor,e.hl.OutlineColor,e.hl.FillTransparency=ch,1,clr,clr,0.5*(1-a)elseif e.hl then e.hl.Enabled=0 end local hp=h.Health/h.MaxHealth local hw,hx=4,bx-10 e.hbb.Size,e.hbb.Position,e.hbb.Transparency,e.hbb.Visible=Vector2.new(hw,bh),Vector2.new(hx,by),a,c.e.hp==1 local hh=bh*hp e.hb.Size,e.hb.Position,e.hb.Color=Vector2.new(hw,hh),Vector2.new(hx,by+(bh-hh)),hp>0.6 and Color3.fromRGB(0,255,0)or(hp>0.3 and Color3.fromRGB(255,255,0)or Color3.fromRGB(255,0,0))e.hb.Transparency,e.hb.Visible=a,c.e.hp==1 e.hp.Text,e.hp.Position,e.hp.Color,e.hp.Transparency,e.hp.Visible=string.format("%d",math.floor(h.Health)),Vector2.new(hx-2,by+bh+2),e.hb.Color,a,c.e.hp==1 local nm=e.n==1 and(ch.Name.." [NPC]")or t.Name e.nm.Text,e.nm.Position,e.nm.Color,e.nm.Transparency,e.nm.Visible=nm,Vector2.new(rs.X,by-18),clr,a,1 e.ds.Text,e.ds.Position,e.ds.Transparency,e.ds.Visible=string.format("%dm",math.floor(d)),Vector2.new(rs.X,by+bh+5),a,c.e.dst==1 if c.e.gn==1 and e.n==0 then local tl=ch:FindFirstChildOfClass("Tool")if tl then e.gn.Text,e.gn.Position,e.gn.Color,e.gn.Transparency,e.gn.Visible="🔫 "..tl.Name,Vector2.new(rs.X,by+bh+22),Color3.fromRGB(255,200,0),a,1 else e.gn.Visible=0 end else e.gn.Visible=0 end if c.e.sn==1 then local sy=C.ViewportSize.Y/2 e.sn.From,e.sn.To=Vector2.new(rs.X,by+bh),Vector2.new(C.ViewportSize.X/2,sy)e.sn.Color=c.e.grd==1 and Color3.fromHSV((d/c.a.dst)*0.3,1,1)or clr e.sn.Transparency=c.e.anm==1 and math.abs(math.sin(tick()*2))*a or a e.sn.Visible=1 else e.sn.Visible=0 end end
 
-local CrosshairDot = Drawing.new("Circle")
-CrosshairDot.Radius, CrosshairDot.Filled, CrosshairDot.Visible = 2, true, false
+local function tg()local cl,md=nil,math.huge if c.a.md=="Selected"and c.a.tg then local p=c.a.tg if p.Character and p.Character:FindFirstChild(c.a.pt)then local pt=p.Character[c.a.pt]if not bh(pt.Position)then local dr=(pt.Position-C.CFrame.Position).Unit local ag=math.deg(math.acos(math.clamp(dr:Dot(C.CFrame.LookVector),-1,1)))local ds=(C.CFrame.Position-pt.Position).Magnitude if ag<=c.a.fov/2 and ds<=c.a.dst then return p.Character end end end end if c.a.md=="Nearest"then for _,p in P:GetPlayers()do if(c.a.tm==1 and tm(p))or p==L then continue end if p.Character and p.Character:FindFirstChild(c.a.pt)then local pt=p.Character[c.a.pt]if not bh(pt.Position)then local dr=(pt.Position-C.CFrame.Position).Unit local ag=math.deg(math.acos(math.clamp(dr:Dot(C.CFrame.LookVector),-1,1)))if ag<=c.a.fov/2 then local ds=(C.CFrame.Position-pt.Position).Magnitude if ds<=c.a.dst and ds<md then cl,md=p.Character,ds end end end end end end if c.a.md=="NPCs"then for _,m in W:GetDescendants()do if m:IsA("Model")and npc(m)==1 then local pt=m:FindFirstChild(c.a.pt)or m:FindFirstChild("Head")or m:FindFirstChild("HumanoidRootPart")if pt and not bh(pt.Position)then local dr=(pt.Position-C.CFrame.Position).Unit local ag=math.deg(math.acos(math.clamp(dr:Dot(C.CFrame.LookVector),-1,1)))if ag<=c.a.fov/2 then local ds=(C.CFrame.Position-pt.Position).Magnitude if ds<=c.a.dst and ds<md then cl,md=m,ds end end end end end end return cl end
 
-local SelectedIndicator = Drawing.new("Circle")
-SelectedIndicator.Thickness, SelectedIndicator.NumSides, SelectedIndicator.Filled, SelectedIndicator.Visible = 3, 50, false, false
+local function drw(cx,cy,sz,clr)for _,g in pairs(x)do for _,j in pairs(g)do j.Visible=0 end end local t=c.a.ctp if t=="Cross"or t=="Cross+Dot"or t=="All"then for _,l in pairs(x.cr)do l.Color=clr end x.cr[1].From,x.cr[1].To=Vector2.new(cx,cy-5),Vector2.new(cx,cy-5-sz)x.cr[2].From,x.cr[2].To=Vector2.new(cx,cy+5),Vector2.new(cx,cy+5+sz)x.cr[3].From,x.cr[3].To=Vector2.new(cx-5,cy),Vector2.new(cx-5-sz,cy)x.cr[4].From,x.cr[4].To=Vector2.new(cx+5,cy),Vector2.new(cx+5+sz,cy)for _,l in pairs(x.cr)do l.Visible=1 end end if t=="Dot"or t=="Dot+Circle"or t=="Cross+Dot"or t=="All"then x.dt[1].Position,x.dt[1].Color,x.dt[1].Visible=Vector2.new(cx,cy),clr,1 end if t=="Circle"or t=="Dot+Circle"or t=="All"then x.cc[1].Position,x.cc[1].Radius,x.cc[1].Color,x.cc[1].Visible=Vector2.new(cx,cy),sz*0.8,clr,1 end if t=="Square"or t=="All"then local s=sz*0.7 x.sq[1].From,x.sq[1].To=Vector2.new(cx-s,cy-s),Vector2.new(cx+s,cy-s)x.sq[2].From,x.sq[2].To=Vector2.new(cx+s,cy-s),Vector2.new(cx+s,cy+s)x.sq[3].From,x.sq[3].To=Vector2.new(cx+s,cy+s),Vector2.new(cx-s,cy+s)x.sq[4].From,x.sq[4].To=Vector2.new(cx-s,cy+s),Vector2.new(cx-s,cy-s)for _,l in pairs(x.sq)do l.Color,l.Visible=clr,1 end end if t=="T"or t=="All"then x.t[1].From,x.t[1].To=Vector2.new(cx-sz,cy-sz),Vector2.new(cx+sz,cy-sz)x.t[2].From,x.t[2].To=Vector2.new(cx,cy-sz),Vector2.new(cx,cy+sz)x.t[3].From,x.t[3].To=Vector2.new(cx,cy),Vector2.new(cx,cy+sz*1.5)for _,l in pairs(x.t)do l.Color,l.Visible=clr,1 end end if t=="X"or t=="All"then x.xc[1].From,x.xc[1].To=Vector2.new(cx-sz,cy-sz),Vector2.new(cx+sz,cy+sz)x.xc[2].From,x.xc[2].To=Vector2.new(cx+sz,cy-sz),Vector2.new(cx-sz,cy+sz)for _,l in pairs(x.xc)do l.Color,l.Visible=clr,1 end end end
 
--- Helper Functions
-local function IsTeammate(player)
-    return LocalPlayer.Team and player.Team and LocalPlayer.Team == player.Team
-end
+local lc,nu=0,0
+R.RenderStepped:Connect(function()local cx,cy=C.ViewportSize.X/2,C.ViewportSize.Y/2 if c.l.on==1 and tick()-lc>=c.l.tm then lc=tick()local cam,lk=C.CFrame.Position,C.CFrame.LookVector for _,p in P:GetPlayers()do if p~=L and p.Character then local r=p.Character:FindFirstChild("HumanoidRootPart")if r then local d=(cam-r.Position).Magnitude if d<=c.l.dst and lk:Dot((r.Position-cam).Unit)<-0.3 then if not ch[p.Name]then ch[p.Name]=1 RF:Notify({Title="⚠️",Content=p.Name.." Behind!",Duration=2})task.delay(3,function()ch[p.Name]=nil end)end end end end end end fv.Radius,fv.Position=(c.a.fov/2)*(C.ViewportSize.Y/90),Vector2.new(cx,cy)fv.Visible,fv.Color=c.a.shw==1,c.e.rb==1 and Color3.fromHSV((tick()*0.5)%1,1,1)or Color3.fromRGB(138,43,226)if c.a.cr==1 then drw(cx,cy,c.a.csz,c.a.cclr)else for _,g in pairs(x)do for _,j in pairs(g)do j.Visible=0 end end end if c.a.tg and c.a.tg.Character then local hd=c.a.tg.Character:FindFirstChild("Head")if hd then local ps,pv=C:WorldToViewportPoint(hd.Position)if pv then sl.Position,sl.Radius,sl.Color,sl.Visible=Vector2.new(ps.X,ps.Y),math.clamp(1000/(hd.Position-C.CFrame.Position).Magnitude*0.8,20,80),Color3.fromRGB(255,0,255),1 else sl.Visible=0 end end else sl.Visible=0 end for p,e in pairs(o)do if e.n==0 then up(p,e)end end nu=nu+1 if nu>=30 and c.e.npc==1 then nu=0 for m,e in pairs(o)do if e.n==1 then if npc(m)==0 then for _,ob in pairs(e)do if typeof(ob)=="table"then for _,s in pairs(ob)do pcall(function()s:Remove()end)end elseif typeof(ob)~="boolean"and ob~=e.hl then pcall(function()ob:Remove()end)end end o[m]=nil else up(m,e)end end end for _,m in W:GetDescendants()do if m:IsA("Model")and npc(m)==1 and not o[m]then mk(m,1)end end end if c.a.on==1 then local tr=tg()if tr then local pt=tr:FindFirstChild(c.a.pt)or tr:FindFirstChild("Head")or tr:FindFirstChild("HumanoidRootPart")if pt then local tp=pt.Position if c.a.sm>0 then local sm=C.CFrame.LookVector:Lerp((tp-C.CFrame.Position).Unit,1-c.a.sm)C.CFrame=CFrame.new(C.CFrame.Position,C.CFrame.Position+sm)else C.CFrame=CFrame.new(C.CFrame.Position,tp)end end end end end)
 
-local function GetTeamColor(player)
-    return player.Team and player.Team.TeamColor.Color or Config.ESP.BoxColor
-end
-
-local function GetPlayerList()
-    local list = {}
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then table.insert(list, player.Name) end
-    end
-    return list
-end
-
-local function IsBehindPlayer(targetPos)
-    if not Config.Aimbot.IgnoreBehind then return false end
-    local cameraLook = Camera.CFrame.LookVector
-    local directionToTarget = (targetPos - Camera.CFrame.Position).Unit
-    local dotProduct = cameraLook:Dot(directionToTarget)
-    return dotProduct < 0 -- Behind if dot product is negative
-end
-
-local function CheckEnemiesBehind()
-    if not Config.BehindAlert.Enabled then return end
-    
-    local currentTime = tick()
-    if currentTime - lastBehindCheck < Config.BehindAlert.CheckInterval then return end
-    lastBehindCheck = currentTime
-    
-    local enemiesBehind = {}
-    local cameraPos = Camera.CFrame.Position
-    local cameraLook = Camera.CFrame.LookVector
-    
-    -- Check Players
-    for _, player in pairs(Players:GetPlayers()) do
-        if player == LocalPlayer or (Config.Aimbot.TeamCheck and IsTeammate(player)) then continue end
-        
-        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-            if humanoid and humanoid.Health > 0 then
-                local rootPart = player.Character.HumanoidRootPart
-                local distance = (cameraPos - rootPart.Position).Magnitude
-                
-                if distance <= Config.BehindAlert.AlertDistance then
-                    local directionToEnemy = (rootPart.Position - cameraPos).Unit
-                    local dotProduct = cameraLook:Dot(directionToEnemy)
-                    
-                    if dotProduct < -0.3 then -- Behind (wider angle)
-                        table.insert(enemiesBehind, {
-                            name = player.Name,
-                            distance = math.floor(distance),
-                            type = "Player"
-                        })
-                    end
-                end
-            end
-        end
-    end
-    
-    -- Check NPCs
-    for _, obj in pairs(Workspace:GetDescendants()) do
-        if obj:IsA("Model") and IsValidNPC(obj) then
-            local rootPart = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Torso")
-            if rootPart then
-                local humanoid = obj:FindFirstChildOfClass("Humanoid")
-                if humanoid and humanoid.Health > 0 then
-                    local distance = (cameraPos - rootPart.Position).Magnitude
-                    
-                    if distance <= Config.BehindAlert.AlertDistance then
-                        local directionToEnemy = (rootPart.Position - cameraPos).Unit
-                        local dotProduct = cameraLook:Dot(directionToEnemy)
-                        
-                        if dotProduct < -0.3 then
-                            table.insert(enemiesBehind, {
-                                name = obj.Name,
-                                distance = math.floor(distance),
-                                type = "NPC"
-                            })
-                        end
-                    end
-                end
-            end
-        end
-    end
-    
-    -- Send notifications
-    if #enemiesBehind > 0 then
-        for _, enemy in ipairs(enemiesBehind) do
-            local cacheKey = enemy.name .. "_" .. enemy.distance
-            if not behindAlertCache[cacheKey] then
-                behindAlertCache[cacheKey] = true
-                
-                local alertMsg = string.format("%s behind you! (%dm)", enemy.type, enemy.distance)
-                Rayfield:Notify({
-                    Title = "⚠️ ENEMY BEHIND!",
-                    Content = enemy.name .. " - " .. alertMsg,
-                    Duration = 3,
-                    Image = 4483362458
-                })
-                
-                -- Clear cache after 5 seconds
-                task.delay(5, function()
-                    behindAlertCache[cacheKey] = nil
-                end)
-            end
-        end
-    end
-end
-
--- NPC Detection
-local function IsValidNPC(model)
-    if not model:IsA("Model") then return false end
-    local humanoid = model:FindFirstChildOfClass("Humanoid")
-    local rootPart = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Torso")
-    
-    if humanoid and rootPart and humanoid.Health > 0 then
-        for _, player in pairs(Players:GetPlayers()) do
-            if player.Character == model then return false end
-        end
-        return true
-    end
-    return false
-end
-
--- UI Setup
-local Window = Rayfield:CreateWindow({
-    Name = "💎 Red Script V3 Advanced",
-    LoadingTitle = "Red Script Loading...",
-    LoadingSubtitle = "Aim Bot V3 - Advanced Targeting",
-    ConfigurationSaving = {Enabled = true, FolderName = "RedScript_AimBot", FileName = "config_v3_adv"},
-    Discord = {Enabled = false}, KeySystem = false, Theme = "Amethyst"
-})
-
--- ESP Tab
-local ESPTab = Window:CreateTab("🎯 ESP", 4483362458)
-ESPTab:CreateToggle({Name = "Enable ESP", CurrentValue = false, Callback = function(v) Config.ESP.Enabled = v end})
-ESPTab:CreateToggle({Name = "Show NPCs/Mobs", CurrentValue = true, Callback = function(v) Config.ESP.ShowNPCs = v end})
-ESPTab:CreateToggle({Name = "Team Check", CurrentValue = false, Callback = function(v) Config.ESP.TeamCheck = v end})
-ESPTab:CreateToggle({Name = "Snaplines", CurrentValue = true, Callback = function(v) Config.ESP.SnaplineEnabled = v end})
-ESPTab:CreateToggle({Name = "Rainbow", CurrentValue = false, Callback = function(v) Config.ESP.RainbowEnabled = v end})
-ESPTab:CreateColorPicker({Name = "Box Color", Color = Color3.fromRGB(138, 43, 226), Callback = function(v) Config.ESP.BoxColor = v end})
-
--- Aimbot Tab
-local AimbotTab = Window:CreateTab("🎮 Aimbot", 4483362458)
-AimbotTab:CreateToggle({Name = "Enable Aimbot", CurrentValue = false, Callback = function(v) Config.Aimbot.Enabled = v end})
-AimbotTab:CreateToggle({Name = "Ignore Behind Camera", CurrentValue = false, 
-    Callback = function(v) Config.Aimbot.IgnoreBehind = v end})
-AimbotTab:CreateToggle({Name = "Team Check", CurrentValue = false, Callback = function(v) Config.Aimbot.TeamCheck = v end})
-AimbotTab:CreateToggle({Name = "Show FOV", CurrentValue = false, Callback = function(v) Config.Aimbot.ShowFOV = v; FOVCircle.Visible = v end})
-AimbotTab:CreateToggle({Name = "Show Crosshair", CurrentValue = false, Callback = function(v) Config.Aimbot.ShowCrosshair = v end})
-
-AimbotTab:CreateSection("Target Selection")
-
-local TargetModeDropdown = AimbotTab:CreateDropdown({
-    Name = "Target Mode", 
-    Options = {"Nearest Player", "Selected Player", "NPCs Only"}, 
-    CurrentOption = "Nearest Player",
-    Callback = function(v)
-        Config.Aimbot.TargetMode = v
-        if v == "Nearest Player" or v == "NPCs Only" then 
-            Config.Aimbot.SelectedPlayer = nil 
-            SelectedIndicator.Visible = false
-        end
-        Rayfield:Notify({Title = "Target Mode", Content = "Changed to: " .. v, Duration = 2})
-    end
-})
-
-local PlayerSelectDropdown = AimbotTab:CreateDropdown({
-    Name = "Select Player Target", 
-    Options = GetPlayerList(), 
-    CurrentOption = "None",
-    Callback = function(v)
-        local target = Players:FindFirstChild(v)
-        if target then
-            Config.Aimbot.SelectedPlayer = target
-            Config.Aimbot.TargetMode = "Selected Player"
-            TargetModeDropdown:Set("Selected Player")
-            Rayfield:Notify({Title = "Target Selected", Content = "Now targeting: " .. v, Duration = 3})
-        end
-    end
-})
-
-AimbotTab:CreateButton({Name = "🔄 Refresh Player List", Callback = function() 
-    PlayerSelectDropdown:Refresh(GetPlayerList()) 
-    Rayfield:Notify({Title = "Refreshed", Content = "Player list updated", Duration = 2})
-end})
-
-AimbotTab:CreateButton({Name = "❌ Clear Target", Callback = function() 
-    Config.Aimbot.SelectedPlayer = nil
-    SelectedIndicator.Visible = false
-    Config.Aimbot.TargetMode = "Nearest Player"
-    TargetModeDropdown:Set("Nearest Player")
-    Rayfield:Notify({Title = "Target Cleared", Content = "Switched to Nearest Player mode", Duration = 2})
-end})
-
-AimbotTab:CreateSection("Settings")
-
-AimbotTab:CreateSlider({Name = "FOV", Range = {10, 100}, Increment = 1, CurrentValue = 30, Callback = function(v) Config.Aimbot.FOV = v end})
-AimbotTab:CreateSlider({Name = "Max Distance", Range = {50, 1000}, Increment = 10, CurrentValue = 200, Callback = function(v) Config.Aimbot.MaxDistance = v end})
-AimbotTab:CreateSlider({Name = "Smoothness", Range = {0, 1}, Increment = 0.01, CurrentValue = 0.5, Callback = function(v) Config.Aimbot.Smoothness = v end})
-AimbotTab:CreateDropdown({Name = "Target Part", Options = {"Head", "Torso", "HumanoidRootPart", "UpperTorso"}, CurrentOption = "Head",
-    Callback = function(v) Config.Aimbot.TargetPart = v end})
-
--- Alert Tab
-local AlertTab = Window:CreateTab("⚠️ Alerts", 4483362458)
-AlertTab:CreateToggle({
-    Name = "Enemy Behind Alert", 
-    CurrentValue = false, 
-    Callback = function(v) 
-        Config.BehindAlert.Enabled = v
-        if v then
-            Rayfield:Notify({Title = "Alert System", Content = "Enemy behind alerts enabled!", Duration = 3})
-        end
-    end
-})
-
-AlertTab:CreateSlider({
-    Name = "Alert Distance (meters)", 
-    Range = {5, 50}, 
-    Increment = 1, 
-    CurrentValue = 20, 
-    Callback = function(v) Config.BehindAlert.AlertDistance = v end
-})
-
-AlertTab:CreateSlider({
-    Name = "Check Interval (seconds)", 
-    Range = {0.5, 5}, 
-    Increment = 0.5, 
-    CurrentValue = 1, 
-    Callback = function(v) Config.BehindAlert.CheckInterval = v end
-})
-
-AlertTab:CreateSection("Alert Info")
-AlertTab:CreateParagraph({
-    Title = "How it works:",
-    Content = "Detects enemies (Players & NPCs) behind your camera and sends notifications with their name and distance. Adjust the alert distance and check interval to your preference."
-})
-
--- ESP Functions
-local function CreateESP(target, isNPC)
-    if not isNPC and target == LocalPlayer then return end
-    local esp = {}
-    local parts = {"TopLeft1", "TopRight1", "BottomLeft1", "BottomRight1", "TopLine", "BottomLine", "LeftLine", "RightLine"}
-    for _, part in pairs(parts) do
-        esp[part] = Drawing.new("Line")
-        esp[part].Thickness, esp[part].Visible = 2, false
-    end
-    
-    esp.HealthBarBg = Drawing.new("Square")
-    esp.HealthBarBg.Filled, esp.HealthBarBg.Color, esp.HealthBarBg.Transparency, esp.HealthBarBg.Visible = true, Color3.new(0.1, 0.1, 0.1), 0.5, false
-    
-    esp.HealthBar = Drawing.new("Square")
-    esp.HealthBar.Filled, esp.HealthBar.Visible = true, false
-    
-    for _, txt in pairs({"Name", "Distance", "HealthText"}) do
-        esp[txt] = Drawing.new("Text")
-        esp[txt].Center, esp[txt].Outline, esp[txt].OutlineColor, esp[txt].Visible = true, true, Color3.new(0, 0, 0), false
-    end
-    esp.Name.Size, esp.Distance.Size, esp.HealthText.Size = 15, 16, 14
-    esp.HealthText.Center = false
-    
-    esp.Snapline = Drawing.new("Line")
-    esp.Snapline.Thickness, esp.Snapline.Visible = 2, false
-    
-    esp.isNPC = isNPC
-    ESPObjects[target] = esp
-end
-
-local function UpdateESP(target, esp)
-    local character = esp.isNPC and target or target.Character
-    
-    if not Config.ESP.Enabled or not character or (esp.isNPC and not Config.ESP.ShowNPCs) or 
-       (not esp.isNPC and Config.ESP.TeamCheck and IsTeammate(target)) then
-        for _, obj in pairs(esp) do if typeof(obj) ~= "boolean" then obj.Visible = false end end
-        return
-    end
-    
-    local humanoid, rootPart, head = character:FindFirstChildOfClass("Humanoid"), 
-        character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso"), character:FindFirstChild("Head")
-    
-    if not humanoid or humanoid.Health <= 0 or not rootPart or not head then
-        for _, obj in pairs(esp) do if typeof(obj) ~= "boolean" then obj.Visible = false end end
-        return
-    end
-    
-    local topPos = head.Position + Vector3.new(0, head.Size.Y / 2, 0)
-    local bottomPos = rootPart.Position - Vector3.new(0, rootPart.Size.Y / 2 + 2, 0)
-    local topScreen, topOn = Camera:WorldToViewportPoint(topPos)
-    local bottomScreen, bottomOn = Camera:WorldToViewportPoint(bottomPos)
-    local rootScreen, rootOn = Camera:WorldToViewportPoint(rootPart.Position)
-    
-    if not topOn and not bottomOn and not rootOn then
-        for _, obj in pairs(esp) do if typeof(obj) ~= "boolean" then obj.Visible = false end end
-        return
-    end
-    
-    local distance = (rootPart.Position - Camera.CFrame.Position).Magnitude
-    local boxHeight, boxWidth = math.abs(topScreen.Y - bottomScreen.Y), math.abs(topScreen.Y - bottomScreen.Y) * 0.55
-    local boxX, boxY = rootScreen.X - boxWidth / 2, topScreen.Y
-    local cornerRadius = math.min(boxWidth * 0.15, boxHeight * 0.08)
-    
-    local boxColor = esp.isNPC and Color3.fromRGB(255, 100, 50) or 
-        (Config.ESP.RainbowEnabled and Color3.fromHSV((tick() * 0.5) % 1, 1, 1) or 
-        (Config.ESP.TeamColor and GetTeamColor(target) or Config.ESP.BoxColor))
-    
-    -- Highlight selected player
-    if not esp.isNPC and target == Config.Aimbot.SelectedPlayer then
-        boxColor = Color3.fromRGB(255, 0, 255) -- Magenta for selected
-    end
-    
-    -- Draw box
-    esp.TopLeft1.From, esp.TopLeft1.To = Vector2.new(boxX + cornerRadius, boxY), Vector2.new(boxX, boxY + cornerRadius)
-    esp.TopRight1.From, esp.TopRight1.To = Vector2.new(boxX + boxWidth - cornerRadius, boxY), Vector2.new(boxX + boxWidth, boxY + cornerRadius)
-    esp.BottomLeft1.From, esp.BottomLeft1.To = Vector2.new(boxX, boxY + boxHeight - cornerRadius), Vector2.new(boxX + cornerRadius, boxY + boxHeight)
-    esp.BottomRight1.From, esp.BottomRight1.To = Vector2.new(boxX + boxWidth - cornerRadius, boxY + boxHeight), Vector2.new(boxX + boxWidth, boxY + boxHeight - cornerRadius)
-    esp.TopLine.From, esp.TopLine.To = Vector2.new(boxX + cornerRadius, boxY), Vector2.new(boxX + boxWidth - cornerRadius, boxY)
-    esp.BottomLine.From, esp.BottomLine.To = Vector2.new(boxX + cornerRadius, boxY + boxHeight), Vector2.new(boxX + boxWidth - cornerRadius, boxY + boxHeight)
-    esp.LeftLine.From, esp.LeftLine.To = Vector2.new(boxX, boxY + cornerRadius), Vector2.new(boxX, boxY + boxHeight - cornerRadius)
-    esp.RightLine.From, esp.RightLine.To = Vector2.new(boxX + boxWidth, boxY + cornerRadius), Vector2.new(boxX + boxWidth, boxY + boxHeight - cornerRadius)
-    
-    for _, part in pairs({"TopLeft1", "TopRight1", "BottomLeft1", "BottomRight1", "TopLine", "BottomLine", "LeftLine", "RightLine"}) do
-        esp[part].Color, esp[part].Visible = boxColor, true
-    end
-    
-    -- Health Bar
-    local healthPercent = humanoid.Health / humanoid.MaxHealth
-    local healthBarWidth, healthBarX = 4, boxX - 10
-    esp.HealthBarBg.Size, esp.HealthBarBg.Position, esp.HealthBarBg.Visible = Vector2.new(healthBarWidth, boxHeight), Vector2.new(healthBarX, boxY), Config.ESP.ShowHealth
-    local healthBarHeight = boxHeight * healthPercent
-    esp.HealthBar.Size, esp.HealthBar.Position = Vector2.new(healthBarWidth, healthBarHeight), Vector2.new(healthBarX, boxY + (boxHeight - healthBarHeight))
-    esp.HealthBar.Color = healthPercent > 0.6 and Color3.fromRGB(0, 255, 0) or (healthPercent > 0.3 and Color3.fromRGB(255, 255, 0) or Color3.fromRGB(255, 0, 0))
-    esp.HealthBar.Visible = Config.ESP.ShowHealth
-    esp.HealthText.Text, esp.HealthText.Position, esp.HealthText.Color, esp.HealthText.Visible = 
-        string.format("%d HP", math.floor(humanoid.Health)), Vector2.new(healthBarX - 2, boxY + boxHeight + 2), esp.HealthBar.Color, Config.ESP.ShowHealth
-    
-    local displayName = esp.isNPC and (character.Name .. " [NPC]") or target.Name
-    esp.Name.Text, esp.Name.Position, esp.Name.Color, esp.Name.Visible = displayName, Vector2.new(rootScreen.X, boxY - 18), boxColor, true
-    esp.Distance.Text, esp.Distance.Position, esp.Distance.Visible = string.format("%dm", math.floor(distance)), Vector2.new(rootScreen.X, boxY + boxHeight + 5), Config.ESP.ShowDistance
-    
-    if Config.ESP.SnaplineEnabled then
-        local snapY = Config.ESP.SnaplinePosition == "Bottom" and Camera.ViewportSize.Y or (Config.ESP.SnaplinePosition == "Top" and 0 or Camera.ViewportSize.Y / 2)
-        esp.Snapline.From, esp.Snapline.To, esp.Snapline.Color, esp.Snapline.Visible = 
-            Vector2.new(rootScreen.X, boxY + boxHeight), Vector2.new(Camera.ViewportSize.X / 2, snapY), boxColor, true
-    else
-        esp.Snapline.Visible = false
-    end
-end
-
--- Advanced Aimbot Targeting
-local function GetClosestTarget()
-    local closest, minDist = nil, math.huge
-    
-    -- Mode: Selected Player
-    if Config.Aimbot.TargetMode == "Selected Player" and Config.Aimbot.SelectedPlayer then
-        local player = Config.Aimbot.SelectedPlayer
-        if player.Character and player.Character:FindFirstChild(Config.Aimbot.TargetPart) then
-            local targetPart = player.Character[Config.Aimbot.TargetPart]
-            if not IsBehindPlayer(targetPart.Position) then
-                local dir = (targetPart.Position - Camera.CFrame.Position).Unit
-                local angle = math.deg(math.acos(math.clamp(dir:Dot(Camera.CFrame.LookVector), -1, 1)))
-                local dist = (Camera.CFrame.Position - targetPart.Position).Magnitude
-                
-                if angle <= Config.Aimbot.FOV / 2 and dist <= Config.Aimbot.MaxDistance then
-                    return player.Character
-                end
-            end
-        end
-    end
-    
-    -- Mode: Nearest Player
-    if Config.Aimbot.TargetMode == "Nearest Player" then
-        for _, player in pairs(Players:GetPlayers()) do
-            if (Config.Aimbot.TeamCheck and IsTeammate(player)) or player == LocalPlayer then continue end
-            if player.Character and player.Character:FindFirstChild(Config.Aimbot.TargetPart) then
-                local targetPart = player.Character[Config.Aimbot.TargetPart]
-                if not IsBehindPlayer(targetPart.Position) then
-                    local dir = (targetPart.Position - Camera.CFrame.Position).Unit
-                    local angle = math.deg(math.acos(math.clamp(dir:Dot(Camera.CFrame.LookVector), -1, 1)))
-                    
-                    if angle <= Config.Aimbot.FOV / 2 then
-                        local dist = (Camera.CFrame.Position - targetPart.Position).Magnitude
-                        if dist <= Config.Aimbot.MaxDistance and dist < minDist then
-                            closest, minDist = player.Character, dist
-                        end
-                    end
-                end
-            end
-        end
-    end
-    
-    -- Mode: NPCs Only
-    if Config.Aimbot.TargetMode == "NPCs Only" then
-        for _, obj in pairs(Workspace:GetDescendants()) do
-            if obj:IsA("Model") and IsValidNPC(obj) then
-                local targetPart = obj:FindFirstChild(Config.Aimbot.TargetPart) or obj:FindFirstChild("Head") or obj:FindFirstChild("HumanoidRootPart")
-                if targetPart and not IsBehindPlayer(targetPart.Position) then
-                    local dir = (targetPart.Position - Camera.CFrame.Position).Unit
-                    local angle = math.deg(math.acos(math.clamp(dir:Dot(Camera.CFrame.LookVector), -1, 1)))
-                    
-                    if angle <= Config.Aimbot.FOV / 2 then
-                        local dist = (Camera.CFrame.Position - targetPart.Position).Magnitude
-                        if dist <= Config.Aimbot.MaxDistance and dist < minDist then
-                            closest, minDist = obj, dist
-                        end
-                    end
-                end
-            end
-        end
-    end
-    
-    return closest
-end
-
--- Main Loop
-local npcUpdateInterval = 0
-RunService.RenderStepped:Connect(function()
-    local centerX, centerY = Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2
-    
-    -- Check enemies behind
-    CheckEnemiesBehind()
-    
-    -- FOV Circle
-    FOVCircle.Radius, FOVCircle.Position = (Config.Aimbot.FOV / 2) * (Camera.ViewportSize.Y / 90), Vector2.new(centerX, centerY)
-    FOVCircle.Visible, FOVCircle.Color = Config.Aimbot.ShowFOV, Config.ESP.RainbowEnabled and Color3.fromHSV((tick() * 0.5) % 1, 1, 1) or Color3.fromRGB(138, 43, 226)
-    
-    -- Crosshair
-    if Config.Aimbot.ShowCrosshair then
-        local size, gap = Config.Aimbot.CrosshairSize, 5
-        for _, line in pairs(Crosshair) do line.Color, line.Thickness, line.Visible = Config.Aimbot.CrosshairColor, Config.Aimbot.CrosshairThickness, true end
-        Crosshair[1].From, Crosshair[1].To = Vector2.new(centerX, centerY - gap), Vector2.new(centerX, centerY - gap - size)
-        Crosshair[2].From, Crosshair[2].To = Vector2.new(centerX, centerY + gap), Vector2.new(centerX, centerY + gap + size)
-        Crosshair[3].From, Crosshair[3].To = Vector2.new(centerX - gap, centerY), Vector2.new(centerX - gap - size, centerY)
-        Crosshair[4].From, Crosshair[4].To = Vector2.new(centerX + gap, centerY), Vector2.new(centerX + gap + size, centerY)
-        CrosshairDot.Position, CrosshairDot.Color, CrosshairDot.Visible = Vector2.new(centerX, centerY), Config.Aimbot.CrosshairColor, true
-    else
-        for _, line in pairs(Crosshair) do line.Visible = false end
-        CrosshairDot.Visible = false
-    end
-    
-    -- Selected Player Indicator
-    if Config.Aimbot.SelectedPlayer and Config.Aimbot.SelectedPlayer.Character then
-        local head = Config.Aimbot.SelectedPlayer.Character:FindFirstChild("Head")
-        if head then
-            local pos, onScreen = Camera:WorldToViewportPoint(head.Position)
-            if onScreen then
-                local scale = 1000 / (head.Position - Camera.CFrame.Position).Magnitude
-                SelectedIndicator.Position, SelectedIndicator.Radius = Vector2.new(pos.X, pos.Y), math.clamp(scale * 0.8, 20, 80)
-                SelectedIndicator.Color, SelectedIndicator.Visible = Color3.fromRGB(255, 0, 255), true
-            else
-                SelectedIndicator.Visible = false
-            end
-        end
-    else
-        SelectedIndicator.Visible = false
-    end
-    
-    -- Update Player ESP
-    for player, esp in pairs(ESPObjects) do
-        if not esp.isNPC then UpdateESP(player, esp) end
-    end
-    
-    -- Update NPC ESP (every 0.5s)
-    npcUpdateInterval = npcUpdateInterval + 1
-    if npcUpdateInterval >= 30 and Config.ESP.ShowNPCs then
-        npcUpdateInterval = 0
-        for obj, esp in pairs(ESPObjects) do
-            if esp.isNPC then
-                if not IsValidNPC(obj) then
-                    for _, drawing in pairs(esp) do if typeof(drawing) ~= "boolean" then drawing:Remove() end end
-                    ESPObjects[obj] = nil
-                else
-                    UpdateESP(obj, esp)
-                end
-            end
-        end
-        
-        -- Add new NPCs
-        for _, obj in pairs(Workspace:GetDescendants()) do
-            if obj:IsA("Model") and IsValidNPC(obj) and not ESPObjects[obj] then
-                CreateESP(obj, true)
-            end
-        end
-    end
-    
-    -- Aimbot
-    if Config.Aimbot.Enabled then
-        local target = GetClosestTarget()
-        if target then
-            local targetPart = target:FindFirstChild(Config.Aimbot.TargetPart) or target:FindFirstChild("Head") or target:FindFirstChild("HumanoidRootPart")
-            if targetPart then
-                local targetPos = targetPart.Position
-                if Config.Aimbot.Smoothness > 0 then
-                    local smoothedLook = Camera.CFrame.LookVector:Lerp((targetPos - Camera.CFrame.Position).Unit, 1 - Config.Aimbot.Smoothness)
-                    Camera.CFrame = CFrame.new(Camera.CFrame.Position, Camera.CFrame.Position + smoothedLook)
-                else
-                    Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPos)
-                end
-            end
-        end
-    end
-end)
-
--- Player Events
-for _, player in ipairs(Players:GetPlayers()) do if player ~= LocalPlayer then CreateESP(player, false) end end
-
-Players.PlayerAdded:Connect(function(player) 
-    CreateESP(player, false)
-    task.wait(1)
-    PlayerSelectDropdown:Refresh(GetPlayerList())
-end)
-
-Players.PlayerRemoving:Connect(function(player)
-    if ESPObjects[player] then
-        for _, obj in pairs(ESPObjects[player]) do if typeof(obj) ~= "boolean" then obj:Remove() end end
-        ESPObjects[player] = nil
-    end
-    if Config.Aimbot.SelectedPlayer == player then 
-        Config.Aimbot.SelectedPlayer = nil
-        SelectedIndicator.Visible = false
-        Config.Aimbot.TargetMode = "Nearest Player"
-    end
-    PlayerSelectDropdown:Refresh(GetPlayerList())
-end)
-
-Rayfield:Notify({Title = "🔴 Red Script Loaded", Content = "V3 Advanced Targeting", Duration = 5, Image = 4483362458})
+for _,p in P:GetPlayers()do if p~=L then mk(p,0)end end
+P.PlayerAdded:Connect(function(p)mk(p,0)task.wait(1)ps:Refresh(pl())end)
+P.PlayerRemoving:Connect(function(p)if o[p]then for _,ob in pairs(o[p])do pcall(function()if typeof(ob)~="boolean"and ob~=o[p].hl then ob:Remove()end end)end o[p]=nil end if c.a.tg==p then c.a.tg=nil;sl.Visible=0;c.a.md="Nearest"end ps:Refresh(pl())end)
+RF:Notify({Title="💎 Red V3",Content="Loaded!",Duration=3})
