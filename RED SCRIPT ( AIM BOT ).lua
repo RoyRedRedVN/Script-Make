@@ -1,401 +1,449 @@
 --!strict
--- ESP & Aimbot Script with Rayfield UI + Team Check
--- Optimized and cleaned version
+-- Red Script - Aim Bot V3 + NPC Auto Aim + Advanced Targeting
+local Players, RunService, Workspace = game:GetService("Players"), game:GetService("RunService"), workspace
+local Camera, LocalPlayer = Workspace.CurrentCamera, Players.LocalPlayer
 
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local Workspace = workspace
-local Camera = Workspace.CurrentCamera
-local LocalPlayer = Players.LocalPlayer
-
--- Load Rayfield UI Library
+-- Load UI
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
--- Configuration
+-- Config
 local Config = {
-    ESP = {
-        Enabled = false,
-        BoxColor = Color3.new(1, 0.3, 0.3),
-        DistanceColor = Color3.new(1, 1, 1),
-        SnaplineEnabled = true,
-        SnaplinePosition = "Center",
-        RainbowEnabled = false,
-        ShowDistance = true,
-        ShowHealth = true,
-        TeamCheck = false,
-        TeamColor = true
-    },
-    Aimbot = {
-        Enabled = false,
-        FOV = 30,
-        MaxDistance = 200,
-        ShowFOV = false,
-        TargetPart = "Head",
-        Smoothness = 0.5,
-        TeamCheck = false
-    }
+    ESP = {Enabled = false, BoxColor = Color3.fromRGB(138, 43, 226), GradientColor = Color3.fromRGB(255, 100, 255),
+        SnaplineEnabled = true, SnaplinePosition = "Center", RainbowEnabled = false, GradientEnabled = false,
+        ShowDistance = true, ShowHealth = true, TeamCheck = false, TeamColor = true, ShowNPCs = true},
+    Aimbot = {Enabled = false, FOV = 30, MaxDistance = 200, ShowFOV = false, ShowCrosshair = false,
+        CrosshairSize = 10, CrosshairThickness = 2, CrosshairColor = Color3.fromRGB(255, 255, 255),
+        TargetPart = "Head", Smoothness = 0.5, TeamCheck = false, 
+        TargetMode = "Nearest Player", -- "Nearest Player", "Selected Player", "NPCs Only"
+        SelectedPlayer = nil, IgnoreBehind = false},
+    BehindAlert = {Enabled = false, AlertDistance = 20, CheckInterval = 1, SoundAlert = false}
 }
 
--- ESP Objects Storage
+local behindAlertCache = {}
+local lastBehindCheck = 0
+
 local ESPObjects = {}
 
--- FOV Circle
+-- Drawing Objects
 local FOVCircle = Drawing.new("Circle")
-FOVCircle.Thickness = 2
-FOVCircle.NumSides = 100
-FOVCircle.Filled = false
-FOVCircle.Visible = false
-FOVCircle.Color = Color3.new(1, 1, 1)
+FOVCircle.Thickness, FOVCircle.NumSides, FOVCircle.Filled, FOVCircle.Visible = 2, 100, false, false
 
--- Team Check Function
+local Crosshair = {Drawing.new("Line"), Drawing.new("Line"), Drawing.new("Line"), Drawing.new("Line")}
+for _, line in pairs(Crosshair) do line.Thickness, line.Visible = 2, false end
+
+local CrosshairDot = Drawing.new("Circle")
+CrosshairDot.Radius, CrosshairDot.Filled, CrosshairDot.Visible = 2, true, false
+
+local SelectedIndicator = Drawing.new("Circle")
+SelectedIndicator.Thickness, SelectedIndicator.NumSides, SelectedIndicator.Filled, SelectedIndicator.Visible = 3, 50, false, false
+
+-- Helper Functions
 local function IsTeammate(player)
-    if not LocalPlayer.Team or not player.Team then
-        return false
-    end
-    return LocalPlayer.Team == player.Team
+    return LocalPlayer.Team and player.Team and LocalPlayer.Team == player.Team
 end
 
--- Get Team Color
 local function GetTeamColor(player)
-    if player.Team then
-        return player.Team.TeamColor.Color
-    end
-    return Config.ESP.BoxColor
+    return player.Team and player.Team.TeamColor.Color or Config.ESP.BoxColor
 end
 
--- Create Rayfield Window
+local function GetPlayerList()
+    local list = {}
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then table.insert(list, player.Name) end
+    end
+    return list
+end
+
+local function IsBehindPlayer(targetPos)
+    if not Config.Aimbot.IgnoreBehind then return false end
+    local cameraLook = Camera.CFrame.LookVector
+    local directionToTarget = (targetPos - Camera.CFrame.Position).Unit
+    local dotProduct = cameraLook:Dot(directionToTarget)
+    return dotProduct < 0 -- Behind if dot product is negative
+end
+
+local function CheckEnemiesBehind()
+    if not Config.BehindAlert.Enabled then return end
+    
+    local currentTime = tick()
+    if currentTime - lastBehindCheck < Config.BehindAlert.CheckInterval then return end
+    lastBehindCheck = currentTime
+    
+    local enemiesBehind = {}
+    local cameraPos = Camera.CFrame.Position
+    local cameraLook = Camera.CFrame.LookVector
+    
+    -- Check Players
+    for _, player in pairs(Players:GetPlayers()) do
+        if player == LocalPlayer or (Config.Aimbot.TeamCheck and IsTeammate(player)) then continue end
+        
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+            if humanoid and humanoid.Health > 0 then
+                local rootPart = player.Character.HumanoidRootPart
+                local distance = (cameraPos - rootPart.Position).Magnitude
+                
+                if distance <= Config.BehindAlert.AlertDistance then
+                    local directionToEnemy = (rootPart.Position - cameraPos).Unit
+                    local dotProduct = cameraLook:Dot(directionToEnemy)
+                    
+                    if dotProduct < -0.3 then -- Behind (wider angle)
+                        table.insert(enemiesBehind, {
+                            name = player.Name,
+                            distance = math.floor(distance),
+                            type = "Player"
+                        })
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Check NPCs
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("Model") and IsValidNPC(obj) then
+            local rootPart = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Torso")
+            if rootPart then
+                local humanoid = obj:FindFirstChildOfClass("Humanoid")
+                if humanoid and humanoid.Health > 0 then
+                    local distance = (cameraPos - rootPart.Position).Magnitude
+                    
+                    if distance <= Config.BehindAlert.AlertDistance then
+                        local directionToEnemy = (rootPart.Position - cameraPos).Unit
+                        local dotProduct = cameraLook:Dot(directionToEnemy)
+                        
+                        if dotProduct < -0.3 then
+                            table.insert(enemiesBehind, {
+                                name = obj.Name,
+                                distance = math.floor(distance),
+                                type = "NPC"
+                            })
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Send notifications
+    if #enemiesBehind > 0 then
+        for _, enemy in ipairs(enemiesBehind) do
+            local cacheKey = enemy.name .. "_" .. enemy.distance
+            if not behindAlertCache[cacheKey] then
+                behindAlertCache[cacheKey] = true
+                
+                local alertMsg = string.format("%s behind you! (%dm)", enemy.type, enemy.distance)
+                Rayfield:Notify({
+                    Title = "⚠️ ENEMY BEHIND!",
+                    Content = enemy.name .. " - " .. alertMsg,
+                    Duration = 3,
+                    Image = 4483362458
+                })
+                
+                -- Clear cache after 5 seconds
+                task.delay(5, function()
+                    behindAlertCache[cacheKey] = nil
+                end)
+            end
+        end
+    end
+end
+
+-- NPC Detection
+local function IsValidNPC(model)
+    if not model:IsA("Model") then return false end
+    local humanoid = model:FindFirstChildOfClass("Humanoid")
+    local rootPart = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Torso")
+    
+    if humanoid and rootPart and humanoid.Health > 0 then
+        for _, player in pairs(Players:GetPlayers()) do
+            if player.Character == model then return false end
+        end
+        return true
+    end
+    return false
+end
+
+-- UI Setup
 local Window = Rayfield:CreateWindow({
-    Name = "whoamhoam v2.1 | Team Check Edition",
-    LoadingTitle = "Loading Script...",
-    LoadingSubtitle = "by whoamhoam",
-    ConfigurationSaving = {
-        Enabled = true,
-        FolderName = "whoamhoam_config",
-        FileName = "config"
-    },
-    Discord = {
-        Enabled = false
-    },
-    KeySystem = false
+    Name = "💎 Red Script V3 Advanced",
+    LoadingTitle = "Red Script Loading...",
+    LoadingSubtitle = "Aim Bot V3 - Advanced Targeting",
+    ConfigurationSaving = {Enabled = true, FolderName = "RedScript_AimBot", FileName = "config_v3_adv"},
+    Discord = {Enabled = false}, KeySystem = false, Theme = "Amethyst"
 })
 
 -- ESP Tab
-local ESPTab = Window:CreateTab("🎯 ESP", nil)
-local ESPSection = ESPTab:CreateSection("ESP Settings")
-
-local ESPToggle = ESPTab:CreateToggle({
-    Name = "Enable ESP",
-    CurrentValue = false,
-    Flag = "ESPEnabled",
-    Callback = function(v)
-        Config.ESP.Enabled = v
-    end
-})
-
-local ESPTeamCheck = ESPTab:CreateToggle({
-    Name = "Team Check (Hide Teammates)",
-    CurrentValue = false,
-    Flag = "ESPTeamCheck",
-    Callback = function(v)
-        Config.ESP.TeamCheck = v
-    end
-})
-
-local ESPTeamColor = ESPTab:CreateToggle({
-    Name = "Use Team Colors",
-    CurrentValue = true,
-    Flag = "ESPTeamColor",
-    Callback = function(v)
-        Config.ESP.TeamColor = v
-    end
-})
-
-local SnaplineToggle = ESPTab:CreateToggle({
-    Name = "Show Snaplines",
-    CurrentValue = true,
-    Flag = "SnaplineEnabled",
-    Callback = function(v)
-        Config.ESP.SnaplineEnabled = v
-    end
-})
-
-local RainbowToggle = ESPTab:CreateToggle({
-    Name = "Rainbow Mode",
-    CurrentValue = false,
-    Flag = "RainbowEnabled",
-    Callback = function(v)
-        Config.ESP.RainbowEnabled = v
-    end
-})
-
-local SnaplineDropdown = ESPTab:CreateDropdown({
-    Name = "Snapline Position",
-    Options = {"Center", "Bottom", "Top"},
-    CurrentOption = "Center",
-    Flag = "SnaplinePosition",
-    Callback = function(v)
-        Config.ESP.SnaplinePosition = v
-    end
-})
-
-local ESPColorPicker = ESPTab:CreateColorPicker({
-    Name = "ESP Box Color",
-    Color = Color3.new(1, 0.3, 0.3),
-    Flag = "ESPColor",
-    Callback = function(v)
-        Config.ESP.BoxColor = v
-    end
-})
+local ESPTab = Window:CreateTab("🎯 ESP", 4483362458)
+ESPTab:CreateToggle({Name = "Enable ESP", CurrentValue = false, Callback = function(v) Config.ESP.Enabled = v end})
+ESPTab:CreateToggle({Name = "Show NPCs/Mobs", CurrentValue = true, Callback = function(v) Config.ESP.ShowNPCs = v end})
+ESPTab:CreateToggle({Name = "Team Check", CurrentValue = false, Callback = function(v) Config.ESP.TeamCheck = v end})
+ESPTab:CreateToggle({Name = "Snaplines", CurrentValue = true, Callback = function(v) Config.ESP.SnaplineEnabled = v end})
+ESPTab:CreateToggle({Name = "Rainbow", CurrentValue = false, Callback = function(v) Config.ESP.RainbowEnabled = v end})
+ESPTab:CreateColorPicker({Name = "Box Color", Color = Color3.fromRGB(138, 43, 226), Callback = function(v) Config.ESP.BoxColor = v end})
 
 -- Aimbot Tab
-local AimbotTab = Window:CreateTab("🎮 Aimbot", nil)
-local AimbotSection = AimbotTab:CreateSection("Aimbot Settings")
+local AimbotTab = Window:CreateTab("🎮 Aimbot", 4483362458)
+AimbotTab:CreateToggle({Name = "Enable Aimbot", CurrentValue = false, Callback = function(v) Config.Aimbot.Enabled = v end})
+AimbotTab:CreateToggle({Name = "Ignore Behind Camera", CurrentValue = false, 
+    Callback = function(v) Config.Aimbot.IgnoreBehind = v end})
+AimbotTab:CreateToggle({Name = "Team Check", CurrentValue = false, Callback = function(v) Config.Aimbot.TeamCheck = v end})
+AimbotTab:CreateToggle({Name = "Show FOV", CurrentValue = false, Callback = function(v) Config.Aimbot.ShowFOV = v; FOVCircle.Visible = v end})
+AimbotTab:CreateToggle({Name = "Show Crosshair", CurrentValue = false, Callback = function(v) Config.Aimbot.ShowCrosshair = v end})
 
-local AimbotToggle = AimbotTab:CreateToggle({
-    Name = "Enable Aimbot",
-    CurrentValue = false,
-    Flag = "AimbotEnabled",
+AimbotTab:CreateSection("Target Selection")
+
+local TargetModeDropdown = AimbotTab:CreateDropdown({
+    Name = "Target Mode", 
+    Options = {"Nearest Player", "Selected Player", "NPCs Only"}, 
+    CurrentOption = "Nearest Player",
     Callback = function(v)
-        Config.Aimbot.Enabled = v
-    end
-})
-
-local AimbotTeamCheck = AimbotTab:CreateToggle({
-    Name = "Team Check (Ignore Teammates)",
-    CurrentValue = false,
-    Flag = "AimbotTeamCheck",
-    Callback = function(v)
-        Config.Aimbot.TeamCheck = v
-    end
-})
-
-local FOVToggle = AimbotTab:CreateToggle({
-    Name = "Show FOV Circle",
-    CurrentValue = false,
-    Flag = "ShowFOV",
-    Callback = function(v)
-        Config.Aimbot.ShowFOV = v
-        FOVCircle.Visible = v
-    end
-})
-
-local FOVSlider = AimbotTab:CreateSlider({
-    Name = "FOV Size",
-    Range = {10, 100},
-    Increment = 1,
-    CurrentValue = 30,
-    Flag = "FOV",
-    Callback = function(v)
-        Config.Aimbot.FOV = v
-    end
-})
-
-local DistanceSlider = AimbotTab:CreateSlider({
-    Name = "Max Distance",
-    Range = {50, 1000},
-    Increment = 10,
-    CurrentValue = 200,
-    Flag = "MaxDistance",
-    Callback = function(v)
-        Config.Aimbot.MaxDistance = v
-    end
-})
-
-local TargetPartDropdown = AimbotTab:CreateDropdown({
-    Name = "Target Part",
-    Options = {"Head", "Torso", "HumanoidRootPart"},
-    CurrentOption = "Head",
-    Flag = "TargetPart",
-    Callback = function(v)
-        Config.Aimbot.TargetPart = v
-    end
-})
-
--- Info Tab
-local InfoTab = Window:CreateTab("ℹ️ Info", nil)
-local InfoSection = InfoTab:CreateSection("Information")
-
-InfoTab:CreateParagraph({
-    Title = "Script Info",
-    Content = "Red Script - Aim Bot v2.1\n\nFeatures:\n• ESP with team check\n• Aimbot with team check\n• Team color support\n• Rainbow mode\n• FOV circle\n• Customizable settings"
-})
-
-InfoTab:CreateParagraph({
-    Title = "Team Check",
-    Content = "When enabled:\n• ESP: Hides teammates\n• Aimbot: Won't target teammates\n• Team Colors: Shows player's team color"
-})
-
-InfoTab:CreateButton({
-    Name = "Destroy GUI",
-    Callback = function()
-        Rayfield:Destroy()
-        for _, esp in pairs(ESPObjects) do
-            for _, obj in pairs(esp) do
-                obj:Remove()
-            end
+        Config.Aimbot.TargetMode = v
+        if v == "Nearest Player" or v == "NPCs Only" then 
+            Config.Aimbot.SelectedPlayer = nil 
+            SelectedIndicator.Visible = false
         end
-        FOVCircle:Remove()
-        print("Script unloaded!")
+        Rayfield:Notify({Title = "Target Mode", Content = "Changed to: " .. v, Duration = 2})
     end
+})
+
+local PlayerSelectDropdown = AimbotTab:CreateDropdown({
+    Name = "Select Player Target", 
+    Options = GetPlayerList(), 
+    CurrentOption = "None",
+    Callback = function(v)
+        local target = Players:FindFirstChild(v)
+        if target then
+            Config.Aimbot.SelectedPlayer = target
+            Config.Aimbot.TargetMode = "Selected Player"
+            TargetModeDropdown:Set("Selected Player")
+            Rayfield:Notify({Title = "Target Selected", Content = "Now targeting: " .. v, Duration = 3})
+        end
+    end
+})
+
+AimbotTab:CreateButton({Name = "🔄 Refresh Player List", Callback = function() 
+    PlayerSelectDropdown:Refresh(GetPlayerList()) 
+    Rayfield:Notify({Title = "Refreshed", Content = "Player list updated", Duration = 2})
+end})
+
+AimbotTab:CreateButton({Name = "❌ Clear Target", Callback = function() 
+    Config.Aimbot.SelectedPlayer = nil
+    SelectedIndicator.Visible = false
+    Config.Aimbot.TargetMode = "Nearest Player"
+    TargetModeDropdown:Set("Nearest Player")
+    Rayfield:Notify({Title = "Target Cleared", Content = "Switched to Nearest Player mode", Duration = 2})
+end})
+
+AimbotTab:CreateSection("Settings")
+
+AimbotTab:CreateSlider({Name = "FOV", Range = {10, 100}, Increment = 1, CurrentValue = 30, Callback = function(v) Config.Aimbot.FOV = v end})
+AimbotTab:CreateSlider({Name = "Max Distance", Range = {50, 1000}, Increment = 10, CurrentValue = 200, Callback = function(v) Config.Aimbot.MaxDistance = v end})
+AimbotTab:CreateSlider({Name = "Smoothness", Range = {0, 1}, Increment = 0.01, CurrentValue = 0.5, Callback = function(v) Config.Aimbot.Smoothness = v end})
+AimbotTab:CreateDropdown({Name = "Target Part", Options = {"Head", "Torso", "HumanoidRootPart", "UpperTorso"}, CurrentOption = "Head",
+    Callback = function(v) Config.Aimbot.TargetPart = v end})
+
+-- Alert Tab
+local AlertTab = Window:CreateTab("⚠️ Alerts", 4483362458)
+AlertTab:CreateToggle({
+    Name = "Enemy Behind Alert", 
+    CurrentValue = false, 
+    Callback = function(v) 
+        Config.BehindAlert.Enabled = v
+        if v then
+            Rayfield:Notify({Title = "Alert System", Content = "Enemy behind alerts enabled!", Duration = 3})
+        end
+    end
+})
+
+AlertTab:CreateSlider({
+    Name = "Alert Distance (meters)", 
+    Range = {5, 50}, 
+    Increment = 1, 
+    CurrentValue = 20, 
+    Callback = function(v) Config.BehindAlert.AlertDistance = v end
+})
+
+AlertTab:CreateSlider({
+    Name = "Check Interval (seconds)", 
+    Range = {0.5, 5}, 
+    Increment = 0.5, 
+    CurrentValue = 1, 
+    Callback = function(v) Config.BehindAlert.CheckInterval = v end
+})
+
+AlertTab:CreateSection("Alert Info")
+AlertTab:CreateParagraph({
+    Title = "How it works:",
+    Content = "Detects enemies (Players & NPCs) behind your camera and sends notifications with their name and distance. Adjust the alert distance and check interval to your preference."
 })
 
 -- ESP Functions
-local function CreateESP(player)
-    if player == LocalPlayer then return end
+local function CreateESP(target, isNPC)
+    if not isNPC and target == LocalPlayer then return end
+    local esp = {}
+    local parts = {"TopLeft1", "TopRight1", "BottomLeft1", "BottomRight1", "TopLine", "BottomLine", "LeftLine", "RightLine"}
+    for _, part in pairs(parts) do
+        esp[part] = Drawing.new("Line")
+        esp[part].Thickness, esp[part].Visible = 2, false
+    end
     
-    local esp = {
-        Box = Drawing.new("Square"),
-        HealthBar = Drawing.new("Square"),
-        Distance = Drawing.new("Text"),
-        Snapline = Drawing.new("Line"),
-        Name = Drawing.new("Text")
-    }
+    esp.HealthBarBg = Drawing.new("Square")
+    esp.HealthBarBg.Filled, esp.HealthBarBg.Color, esp.HealthBarBg.Transparency, esp.HealthBarBg.Visible = true, Color3.new(0.1, 0.1, 0.1), 0.5, false
     
-    -- Setup Box
-    esp.Box.Thickness = 2
-    esp.Box.Filled = false
-    esp.Box.Color = Config.ESP.BoxColor
-    esp.Box.Visible = false
+    esp.HealthBar = Drawing.new("Square")
+    esp.HealthBar.Filled, esp.HealthBar.Visible = true, false
     
-    -- Setup HealthBar
-    esp.HealthBar.Thickness = 2
-    esp.HealthBar.Filled = true
-    esp.HealthBar.Visible = false
+    for _, txt in pairs({"Name", "Distance", "HealthText"}) do
+        esp[txt] = Drawing.new("Text")
+        esp[txt].Center, esp[txt].Outline, esp[txt].OutlineColor, esp[txt].Visible = true, true, Color3.new(0, 0, 0), false
+    end
+    esp.Name.Size, esp.Distance.Size, esp.HealthText.Size = 15, 16, 14
+    esp.HealthText.Center = false
     
-    -- Setup Distance Text
-    esp.Distance.Size = 16
-    esp.Distance.Center = true
-    esp.Distance.Color = Config.ESP.DistanceColor
-    esp.Distance.Visible = false
+    esp.Snapline = Drawing.new("Line")
+    esp.Snapline.Thickness, esp.Snapline.Visible = 2, false
     
-    -- Setup Name Text
-    esp.Name.Size = 14
-    esp.Name.Center = true
-    esp.Name.Color = Color3.new(1, 1, 1)
-    esp.Name.Visible = false
-    
-    -- Setup Snapline
-    esp.Snapline.Thickness = 2
-    esp.Snapline.Color = Config.ESP.BoxColor
-    esp.Snapline.Visible = false
-    
-    ESPObjects[player] = esp
+    esp.isNPC = isNPC
+    ESPObjects[target] = esp
 end
 
-local function UpdateESP(player, esp)
-    -- Team Check
-    if Config.ESP.TeamCheck and IsTeammate(player) then
-        for _, obj in pairs(esp) do
-            obj.Visible = false
-        end
+local function UpdateESP(target, esp)
+    local character = esp.isNPC and target or target.Character
+    
+    if not Config.ESP.Enabled or not character or (esp.isNPC and not Config.ESP.ShowNPCs) or 
+       (not esp.isNPC and Config.ESP.TeamCheck and IsTeammate(target)) then
+        for _, obj in pairs(esp) do if typeof(obj) ~= "boolean" then obj.Visible = false end end
         return
     end
     
-    if not Config.ESP.Enabled or not player.Character then
-        for _, obj in pairs(esp) do
-            obj.Visible = false
-        end
+    local humanoid, rootPart, head = character:FindFirstChildOfClass("Humanoid"), 
+        character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso"), character:FindFirstChild("Head")
+    
+    if not humanoid or humanoid.Health <= 0 or not rootPart or not head then
+        for _, obj in pairs(esp) do if typeof(obj) ~= "boolean" then obj.Visible = false end end
         return
     end
     
-    local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-    local head = player.Character:FindFirstChild("Head")
+    local topPos = head.Position + Vector3.new(0, head.Size.Y / 2, 0)
+    local bottomPos = rootPart.Position - Vector3.new(0, rootPart.Size.Y / 2 + 2, 0)
+    local topScreen, topOn = Camera:WorldToViewportPoint(topPos)
+    local bottomScreen, bottomOn = Camera:WorldToViewportPoint(bottomPos)
+    local rootScreen, rootOn = Camera:WorldToViewportPoint(rootPart.Position)
     
-    if not humanoid or humanoid.Health <= 0 or not head then
-        for _, obj in pairs(esp) do
-            obj.Visible = false
-        end
+    if not topOn and not bottomOn and not rootOn then
+        for _, obj in pairs(esp) do if typeof(obj) ~= "boolean" then obj.Visible = false end end
         return
     end
     
-    local pos, onScreen = Camera:WorldToViewportPoint(head.Position)
+    local distance = (rootPart.Position - Camera.CFrame.Position).Magnitude
+    local boxHeight, boxWidth = math.abs(topScreen.Y - bottomScreen.Y), math.abs(topScreen.Y - bottomScreen.Y) * 0.55
+    local boxX, boxY = rootScreen.X - boxWidth / 2, topScreen.Y
+    local cornerRadius = math.min(boxWidth * 0.15, boxHeight * 0.08)
     
-    if not onScreen then
-        for _, obj in pairs(esp) do
-            obj.Visible = false
-        end
-        return
+    local boxColor = esp.isNPC and Color3.fromRGB(255, 100, 50) or 
+        (Config.ESP.RainbowEnabled and Color3.fromHSV((tick() * 0.5) % 1, 1, 1) or 
+        (Config.ESP.TeamColor and GetTeamColor(target) or Config.ESP.BoxColor))
+    
+    -- Highlight selected player
+    if not esp.isNPC and target == Config.Aimbot.SelectedPlayer then
+        boxColor = Color3.fromRGB(255, 0, 255) -- Magenta for selected
     end
     
-    local distance = (head.Position - Camera.CFrame.Position).Magnitude
-    local scale = 1000 / distance
+    -- Draw box
+    esp.TopLeft1.From, esp.TopLeft1.To = Vector2.new(boxX + cornerRadius, boxY), Vector2.new(boxX, boxY + cornerRadius)
+    esp.TopRight1.From, esp.TopRight1.To = Vector2.new(boxX + boxWidth - cornerRadius, boxY), Vector2.new(boxX + boxWidth, boxY + cornerRadius)
+    esp.BottomLeft1.From, esp.BottomLeft1.To = Vector2.new(boxX, boxY + boxHeight - cornerRadius), Vector2.new(boxX + cornerRadius, boxY + boxHeight)
+    esp.BottomRight1.From, esp.BottomRight1.To = Vector2.new(boxX + boxWidth - cornerRadius, boxY + boxHeight), Vector2.new(boxX + boxWidth, boxY + boxHeight - cornerRadius)
+    esp.TopLine.From, esp.TopLine.To = Vector2.new(boxX + cornerRadius, boxY), Vector2.new(boxX + boxWidth - cornerRadius, boxY)
+    esp.BottomLine.From, esp.BottomLine.To = Vector2.new(boxX + cornerRadius, boxY + boxHeight), Vector2.new(boxX + boxWidth - cornerRadius, boxY + boxHeight)
+    esp.LeftLine.From, esp.LeftLine.To = Vector2.new(boxX, boxY + cornerRadius), Vector2.new(boxX, boxY + boxHeight - cornerRadius)
+    esp.RightLine.From, esp.RightLine.To = Vector2.new(boxX + boxWidth, boxY + cornerRadius), Vector2.new(boxX + boxWidth, boxY + boxHeight - cornerRadius)
     
-    -- Determine Color
-    local boxColor = Config.ESP.BoxColor
-    if Config.ESP.RainbowEnabled then
-        local hue = (tick() * 0.5) % 1
-        boxColor = Color3.fromHSV(hue, 1, 1)
-    elseif Config.ESP.TeamColor then
-        boxColor = GetTeamColor(player)
+    for _, part in pairs({"TopLeft1", "TopRight1", "BottomLeft1", "BottomRight1", "TopLine", "BottomLine", "LeftLine", "RightLine"}) do
+        esp[part].Color, esp[part].Visible = boxColor, true
     end
     
-    -- Update Box
-    esp.Box.Size = Vector2.new(scale, scale * 1.5)
-    esp.Box.Position = Vector2.new(pos.X - scale/2, pos.Y - scale * 0.75)
-    esp.Box.Color = boxColor
-    esp.Box.Visible = true
-    
-    -- Update Health Bar
+    -- Health Bar
     local healthPercent = humanoid.Health / humanoid.MaxHealth
-    esp.HealthBar.Size = Vector2.new(4, scale * 1.5 * healthPercent)
-    esp.HealthBar.Position = Vector2.new(pos.X + scale/2 + 5, (pos.Y - scale * 0.75) + (scale * 1.5 * (1 - healthPercent)))
-    esp.HealthBar.Color = Color3.new(1 - healthPercent, healthPercent, 0)
-    esp.HealthBar.Visible = true
+    local healthBarWidth, healthBarX = 4, boxX - 10
+    esp.HealthBarBg.Size, esp.HealthBarBg.Position, esp.HealthBarBg.Visible = Vector2.new(healthBarWidth, boxHeight), Vector2.new(healthBarX, boxY), Config.ESP.ShowHealth
+    local healthBarHeight = boxHeight * healthPercent
+    esp.HealthBar.Size, esp.HealthBar.Position = Vector2.new(healthBarWidth, healthBarHeight), Vector2.new(healthBarX, boxY + (boxHeight - healthBarHeight))
+    esp.HealthBar.Color = healthPercent > 0.6 and Color3.fromRGB(0, 255, 0) or (healthPercent > 0.3 and Color3.fromRGB(255, 255, 0) or Color3.fromRGB(255, 0, 0))
+    esp.HealthBar.Visible = Config.ESP.ShowHealth
+    esp.HealthText.Text, esp.HealthText.Position, esp.HealthText.Color, esp.HealthText.Visible = 
+        string.format("%d HP", math.floor(humanoid.Health)), Vector2.new(healthBarX - 2, boxY + boxHeight + 2), esp.HealthBar.Color, Config.ESP.ShowHealth
     
-    -- Update Name
-    esp.Name.Text = player.Name
-    esp.Name.Position = Vector2.new(pos.X, pos.Y - scale * 0.75 - 15)
-    esp.Name.Color = boxColor
-    esp.Name.Visible = true
+    local displayName = esp.isNPC and (character.Name .. " [NPC]") or target.Name
+    esp.Name.Text, esp.Name.Position, esp.Name.Color, esp.Name.Visible = displayName, Vector2.new(rootScreen.X, boxY - 18), boxColor, true
+    esp.Distance.Text, esp.Distance.Position, esp.Distance.Visible = string.format("%dm", math.floor(distance)), Vector2.new(rootScreen.X, boxY + boxHeight + 5), Config.ESP.ShowDistance
     
-    -- Update Distance
-    esp.Distance.Text = math.floor(distance) .. "m"
-    esp.Distance.Position = Vector2.new(pos.X, pos.Y + scale * 0.75 + 10)
-    esp.Distance.Visible = true
-    
-    -- Update Snapline
     if Config.ESP.SnaplineEnabled then
-        esp.Snapline.From = Vector2.new(pos.X, pos.Y + scale * 0.75)
-        local snapY = Config.ESP.SnaplinePosition == "Bottom" and Camera.ViewportSize.Y or
-                     Config.ESP.SnaplinePosition == "Top" and 0 or
-                     Camera.ViewportSize.Y / 2
-        esp.Snapline.To = Vector2.new(Camera.ViewportSize.X / 2, snapY)
-        esp.Snapline.Color = boxColor
-        esp.Snapline.Visible = true
+        local snapY = Config.ESP.SnaplinePosition == "Bottom" and Camera.ViewportSize.Y or (Config.ESP.SnaplinePosition == "Top" and 0 or Camera.ViewportSize.Y / 2)
+        esp.Snapline.From, esp.Snapline.To, esp.Snapline.Color, esp.Snapline.Visible = 
+            Vector2.new(rootScreen.X, boxY + boxHeight), Vector2.new(Camera.ViewportSize.X / 2, snapY), boxColor, true
     else
         esp.Snapline.Visible = false
     end
 end
 
--- Aimbot Function
-local function GetClosestPlayer()
-    local closest = nil
-    local minDist = math.huge
-    local fov = Config.Aimbot.FOV
+-- Advanced Aimbot Targeting
+local function GetClosestTarget()
+    local closest, minDist = nil, math.huge
     
-    for _, player in pairs(Players:GetPlayers()) do
-        -- Team Check for Aimbot
-        if Config.Aimbot.TeamCheck and IsTeammate(player) then
-            continue
-        end
-        
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild(Config.Aimbot.TargetPart) then
+    -- Mode: Selected Player
+    if Config.Aimbot.TargetMode == "Selected Player" and Config.Aimbot.SelectedPlayer then
+        local player = Config.Aimbot.SelectedPlayer
+        if player.Character and player.Character:FindFirstChild(Config.Aimbot.TargetPart) then
             local targetPart = player.Character[Config.Aimbot.TargetPart]
-            local dir = (targetPart.Position - Camera.CFrame.Position).Unit
-            local lookDir = Camera.CFrame.LookVector
-            local angle = math.deg(math.acos(dir:Dot(lookDir)))
-            
-            if angle <= fov / 2 then
+            if not IsBehindPlayer(targetPart.Position) then
+                local dir = (targetPart.Position - Camera.CFrame.Position).Unit
+                local angle = math.deg(math.acos(math.clamp(dir:Dot(Camera.CFrame.LookVector), -1, 1)))
                 local dist = (Camera.CFrame.Position - targetPart.Position).Magnitude
-                if dist <= Config.Aimbot.MaxDistance and dist < minDist then
-                    -- Wall Check
-                    local ray = Ray.new(Camera.CFrame.Position, dir * dist)
-                    local part, _ = Workspace:FindPartOnRay(ray, LocalPlayer.Character)
+                
+                if angle <= Config.Aimbot.FOV / 2 and dist <= Config.Aimbot.MaxDistance then
+                    return player.Character
+                end
+            end
+        end
+    end
+    
+    -- Mode: Nearest Player
+    if Config.Aimbot.TargetMode == "Nearest Player" then
+        for _, player in pairs(Players:GetPlayers()) do
+            if (Config.Aimbot.TeamCheck and IsTeammate(player)) or player == LocalPlayer then continue end
+            if player.Character and player.Character:FindFirstChild(Config.Aimbot.TargetPart) then
+                local targetPart = player.Character[Config.Aimbot.TargetPart]
+                if not IsBehindPlayer(targetPart.Position) then
+                    local dir = (targetPart.Position - Camera.CFrame.Position).Unit
+                    local angle = math.deg(math.acos(math.clamp(dir:Dot(Camera.CFrame.LookVector), -1, 1)))
                     
-                    if part and part:IsDescendantOf(player.Character) then
-                        closest = player
-                        minDist = dist
+                    if angle <= Config.Aimbot.FOV / 2 then
+                        local dist = (Camera.CFrame.Position - targetPart.Position).Magnitude
+                        if dist <= Config.Aimbot.MaxDistance and dist < minDist then
+                            closest, minDist = player.Character, dist
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Mode: NPCs Only
+    if Config.Aimbot.TargetMode == "NPCs Only" then
+        for _, obj in pairs(Workspace:GetDescendants()) do
+            if obj:IsA("Model") and IsValidNPC(obj) then
+                local targetPart = obj:FindFirstChild(Config.Aimbot.TargetPart) or obj:FindFirstChild("Head") or obj:FindFirstChild("HumanoidRootPart")
+                if targetPart and not IsBehindPlayer(targetPart.Position) then
+                    local dir = (targetPart.Position - Camera.CFrame.Position).Unit
+                    local angle = math.deg(math.acos(math.clamp(dir:Dot(Camera.CFrame.LookVector), -1, 1)))
+                    
+                    if angle <= Config.Aimbot.FOV / 2 then
+                        local dist = (Camera.CFrame.Position - targetPart.Position).Magnitude
+                        if dist <= Config.Aimbot.MaxDistance and dist < minDist then
+                            closest, minDist = obj, dist
+                        end
                     end
                 end
             end
@@ -406,58 +454,114 @@ local function GetClosestPlayer()
 end
 
 -- Main Loop
+local npcUpdateInterval = 0
 RunService.RenderStepped:Connect(function()
-    -- Update FOV Circle
-    FOVCircle.Radius = (Config.Aimbot.FOV / 2) * (Camera.ViewportSize.Y / 90)
-    FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-    FOVCircle.Visible = Config.Aimbot.ShowFOV
+    local centerX, centerY = Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2
     
-    if Config.ESP.RainbowEnabled and Config.Aimbot.ShowFOV then
-        FOVCircle.Color = Color3.fromHSV((tick() * 0.5) % 1, 1, 1)
+    -- Check enemies behind
+    CheckEnemiesBehind()
+    
+    -- FOV Circle
+    FOVCircle.Radius, FOVCircle.Position = (Config.Aimbot.FOV / 2) * (Camera.ViewportSize.Y / 90), Vector2.new(centerX, centerY)
+    FOVCircle.Visible, FOVCircle.Color = Config.Aimbot.ShowFOV, Config.ESP.RainbowEnabled and Color3.fromHSV((tick() * 0.5) % 1, 1, 1) or Color3.fromRGB(138, 43, 226)
+    
+    -- Crosshair
+    if Config.Aimbot.ShowCrosshair then
+        local size, gap = Config.Aimbot.CrosshairSize, 5
+        for _, line in pairs(Crosshair) do line.Color, line.Thickness, line.Visible = Config.Aimbot.CrosshairColor, Config.Aimbot.CrosshairThickness, true end
+        Crosshair[1].From, Crosshair[1].To = Vector2.new(centerX, centerY - gap), Vector2.new(centerX, centerY - gap - size)
+        Crosshair[2].From, Crosshair[2].To = Vector2.new(centerX, centerY + gap), Vector2.new(centerX, centerY + gap + size)
+        Crosshair[3].From, Crosshair[3].To = Vector2.new(centerX - gap, centerY), Vector2.new(centerX - gap - size, centerY)
+        Crosshair[4].From, Crosshair[4].To = Vector2.new(centerX + gap, centerY), Vector2.new(centerX + gap + size, centerY)
+        CrosshairDot.Position, CrosshairDot.Color, CrosshairDot.Visible = Vector2.new(centerX, centerY), Config.Aimbot.CrosshairColor, true
     else
-        FOVCircle.Color = Color3.new(1, 1, 1)
+        for _, line in pairs(Crosshair) do line.Visible = false end
+        CrosshairDot.Visible = false
     end
     
-    -- Update ESP
+    -- Selected Player Indicator
+    if Config.Aimbot.SelectedPlayer and Config.Aimbot.SelectedPlayer.Character then
+        local head = Config.Aimbot.SelectedPlayer.Character:FindFirstChild("Head")
+        if head then
+            local pos, onScreen = Camera:WorldToViewportPoint(head.Position)
+            if onScreen then
+                local scale = 1000 / (head.Position - Camera.CFrame.Position).Magnitude
+                SelectedIndicator.Position, SelectedIndicator.Radius = Vector2.new(pos.X, pos.Y), math.clamp(scale * 0.8, 20, 80)
+                SelectedIndicator.Color, SelectedIndicator.Visible = Color3.fromRGB(255, 0, 255), true
+            else
+                SelectedIndicator.Visible = false
+            end
+        end
+    else
+        SelectedIndicator.Visible = false
+    end
+    
+    -- Update Player ESP
     for player, esp in pairs(ESPObjects) do
-        UpdateESP(player, esp)
+        if not esp.isNPC then UpdateESP(player, esp) end
+    end
+    
+    -- Update NPC ESP (every 0.5s)
+    npcUpdateInterval = npcUpdateInterval + 1
+    if npcUpdateInterval >= 30 and Config.ESP.ShowNPCs then
+        npcUpdateInterval = 0
+        for obj, esp in pairs(ESPObjects) do
+            if esp.isNPC then
+                if not IsValidNPC(obj) then
+                    for _, drawing in pairs(esp) do if typeof(drawing) ~= "boolean" then drawing:Remove() end end
+                    ESPObjects[obj] = nil
+                else
+                    UpdateESP(obj, esp)
+                end
+            end
+        end
+        
+        -- Add new NPCs
+        for _, obj in pairs(Workspace:GetDescendants()) do
+            if obj:IsA("Model") and IsValidNPC(obj) and not ESPObjects[obj] then
+                CreateESP(obj, true)
+            end
+        end
     end
     
     -- Aimbot
     if Config.Aimbot.Enabled then
-        local target = GetClosestPlayer()
-        if target and target.Character and target.Character:FindFirstChild(Config.Aimbot.TargetPart) then
-            Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Character[Config.Aimbot.TargetPart].Position)
+        local target = GetClosestTarget()
+        if target then
+            local targetPart = target:FindFirstChild(Config.Aimbot.TargetPart) or target:FindFirstChild("Head") or target:FindFirstChild("HumanoidRootPart")
+            if targetPart then
+                local targetPos = targetPart.Position
+                if Config.Aimbot.Smoothness > 0 then
+                    local smoothedLook = Camera.CFrame.LookVector:Lerp((targetPos - Camera.CFrame.Position).Unit, 1 - Config.Aimbot.Smoothness)
+                    Camera.CFrame = CFrame.new(Camera.CFrame.Position, Camera.CFrame.Position + smoothedLook)
+                else
+                    Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPos)
+                end
+            end
         end
     end
 end)
 
 -- Player Events
-for _, player in ipairs(Players:GetPlayers()) do
-    if player ~= LocalPlayer then
-        CreateESP(player)
-    end
-end
+for _, player in ipairs(Players:GetPlayers()) do if player ~= LocalPlayer then CreateESP(player, false) end end
 
-Players.PlayerAdded:Connect(function(player)
-    CreateESP(player)
+Players.PlayerAdded:Connect(function(player) 
+    CreateESP(player, false)
+    task.wait(1)
+    PlayerSelectDropdown:Refresh(GetPlayerList())
 end)
 
 Players.PlayerRemoving:Connect(function(player)
     if ESPObjects[player] then
-        for _, obj in pairs(ESPObjects[player]) do
-            obj:Remove()
-        end
+        for _, obj in pairs(ESPObjects[player]) do if typeof(obj) ~= "boolean" then obj:Remove() end end
         ESPObjects[player] = nil
     end
+    if Config.Aimbot.SelectedPlayer == player then 
+        Config.Aimbot.SelectedPlayer = nil
+        SelectedIndicator.Visible = false
+        Config.Aimbot.TargetMode = "Nearest Player"
+    end
+    PlayerSelectDropdown:Refresh(GetPlayerList())
 end)
 
--- Notification
-Rayfield:Notify({
-    Title = "Script Loaded",
-    Content = "whoamhoam v2.1 with Team Check loaded!",
-    Duration = 5,
-    Image = 4483362458
-})
-
-print("✅ Script successfully activated with Team Check!")
+Rayfield:Notify({Title = "🔴 Red Script Loaded", Content = "V3 Advanced Targeting", Duration = 5, Image = 4483362458})
