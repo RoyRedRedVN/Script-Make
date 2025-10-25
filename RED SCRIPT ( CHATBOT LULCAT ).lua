@@ -1,4 +1,3 @@
--- beta
 -- Custom Lulcat Chatbot UI (Không dùng Rayfield)
 local TweenService = game:GetService("TweenService")
 local HttpService = game:GetService("HttpService")
@@ -13,11 +12,11 @@ ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
--- Main Frame (cửa sổ chính)
+-- Main Frame (cửa sổ chính) - NHỎ GỌN HỞN
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 450, 0, 550)
-MainFrame.Position = UDim2.new(0.5, -225, 0.5, -275)
+MainFrame.Size = UDim2.new(0, 320, 0, 420)
+MainFrame.Position = UDim2.new(0.5, -160, 0.5, -210)
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
 MainFrame.BorderSizePixel = 0
 MainFrame.Parent = ScreenGui
@@ -39,10 +38,10 @@ Shadow.ImageTransparency = 0.7
 Shadow.ZIndex = 0
 Shadow.Parent = MainFrame
 
--- Header (thanh tiêu đề)
+-- Header (thanh tiêu đề) - GIẢM CHIỀU CAO
 local Header = Instance.new("Frame")
 Header.Name = "Header"
-Header.Size = UDim2.new(1, 0, 0, 50)
+Header.Size = UDim2.new(1, 0, 0, 40)
 Header.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
 Header.BorderSizePixel = 0
 Header.Parent = MainFrame
@@ -59,101 +58,101 @@ HeaderFix.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
 HeaderFix.BorderSizePixel = 0
 HeaderFix.Parent = Header
 
--- Title
+-- Title - GIẢM FONT SIZE
 local Title = Instance.new("TextLabel")
 Title.Name = "Title"
-Title.Size = UDim2.new(1, -100, 1, 0)
-Title.Position = UDim2.new(0, 15, 0, 0)
+Title.Size = UDim2.new(1, -80, 1, 0)
+Title.Position = UDim2.new(0, 12, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "🐱 Lulcat Chatbot"
+Title.Text = "🐱 Lulcat Chat"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextSize = 20
+Title.TextSize = 16
 Title.Font = Enum.Font.GothamBold
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = Header
 
--- Close Button
+-- Close Button - NHỎ HƠN
 local CloseButton = Instance.new("TextButton")
 CloseButton.Name = "CloseButton"
-CloseButton.Size = UDim2.new(0, 35, 0, 35)
-CloseButton.Position = UDim2.new(1, -45, 0.5, -17.5)
+CloseButton.Size = UDim2.new(0, 28, 0, 28)
+CloseButton.Position = UDim2.new(1, -36, 0.5, -14)
 CloseButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
 CloseButton.Text = "✕"
 CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseButton.TextSize = 18
+CloseButton.TextSize = 16
 CloseButton.Font = Enum.Font.GothamBold
 CloseButton.BorderSizePixel = 0
 CloseButton.Parent = Header
 
 local CloseCorner = Instance.new("UICorner")
-CloseCorner.CornerRadius = UDim.new(0, 8)
+CloseCorner.CornerRadius = UDim.new(0, 6)
 CloseCorner.Parent = CloseButton
 
--- Chat List Container
+-- Chat List Container - COMPACT
 local ChatContainer = Instance.new("ScrollingFrame")
 ChatContainer.Name = "ChatContainer"
-ChatContainer.Size = UDim2.new(1, -20, 1, -140)
-ChatContainer.Position = UDim2.new(0, 10, 0, 60)
+ChatContainer.Size = UDim2.new(1, -16, 1, -100)
+ChatContainer.Position = UDim2.new(0, 8, 0, 48)
 ChatContainer.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
 ChatContainer.BorderSizePixel = 0
-ChatContainer.ScrollBarThickness = 6
+ChatContainer.ScrollBarThickness = 4
 ChatContainer.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 120)
 ChatContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
 ChatContainer.Parent = MainFrame
 
 local ChatCorner = Instance.new("UICorner")
-ChatCorner.CornerRadius = UDim.new(0, 10)
+ChatCorner.CornerRadius = UDim.new(0, 8)
 ChatCorner.Parent = ChatContainer
 
--- UIListLayout cho chat messages
+-- UIListLayout cho chat messages - PADDING NHỎ HƠN
 local ChatLayout = Instance.new("UIListLayout")
-ChatLayout.Padding = UDim.new(0, 10)
+ChatLayout.Padding = UDim.new(0, 6)
 ChatLayout.SortOrder = Enum.SortOrder.LayoutOrder
 ChatLayout.Parent = ChatContainer
 
--- Input Container
+-- Input Container - COMPACT
 local InputContainer = Instance.new("Frame")
 InputContainer.Name = "InputContainer"
-InputContainer.Size = UDim2.new(1, -20, 0, 60)
-InputContainer.Position = UDim2.new(0, 10, 1, -70)
+InputContainer.Size = UDim2.new(1, -16, 0, 45)
+InputContainer.Position = UDim2.new(0, 8, 1, -52)
 InputContainer.BackgroundColor3 = Color3.fromRGB(30, 30, 42)
 InputContainer.BorderSizePixel = 0
 InputContainer.Parent = MainFrame
 
 local InputCorner = Instance.new("UICorner")
-InputCorner.CornerRadius = UDim.new(0, 10)
+InputCorner.CornerRadius = UDim.new(0, 8)
 InputCorner.Parent = InputContainer
 
--- TextBox (ô nhập)
+-- TextBox (ô nhập) - COMPACT
 local InputBox = Instance.new("TextBox")
 InputBox.Name = "InputBox"
-InputBox.Size = UDim2.new(1, -80, 1, -20)
-InputBox.Position = UDim2.new(0, 10, 0, 10)
+InputBox.Size = UDim2.new(1, -60, 1, -12)
+InputBox.Position = UDim2.new(0, 8, 0, 6)
 InputBox.BackgroundTransparency = 1
 InputBox.Text = ""
 InputBox.PlaceholderText = "Nhập tin nhắn..."
 InputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 InputBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 160)
-InputBox.TextSize = 16
+InputBox.TextSize = 14
 InputBox.Font = Enum.Font.Gotham
 InputBox.TextXAlignment = Enum.TextXAlignment.Left
 InputBox.ClearTextOnFocus = false
 InputBox.Parent = InputContainer
 
--- Send Button
+-- Send Button - COMPACT
 local SendButton = Instance.new("TextButton")
 SendButton.Name = "SendButton"
-SendButton.Size = UDim2.new(0, 50, 0, 40)
-SendButton.Position = UDim2.new(1, -60, 0.5, -20)
+SendButton.Size = UDim2.new(0, 40, 0, 33)
+SendButton.Position = UDim2.new(1, -46, 0.5, -16.5)
 SendButton.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
 SendButton.Text = "📤"
-SendButton.TextSize = 20
+SendButton.TextSize = 16
 SendButton.Font = Enum.Font.GothamBold
 SendButton.BorderSizePixel = 0
 SendButton.Parent = InputContainer
 
 local SendCorner = Instance.new("UICorner")
-SendCorner.CornerRadius = UDim.new(0, 10)
+SendCorner.CornerRadius = UDim.new(0, 8)
 SendCorner.Parent = SendButton
 
 -- Drag functionality
@@ -253,26 +252,26 @@ function createChatMessage(text, isUser)
     end
     
     local BubbleCorner = Instance.new("UICorner")
-    BubbleCorner.CornerRadius = UDim.new(0, 12)
+    BubbleCorner.CornerRadius = UDim.new(0, 10)
     BubbleCorner.Parent = Bubble
     
     local MessageText = Instance.new("TextLabel")
     MessageText.Name = "MessageText"
-    MessageText.Size = UDim2.new(1, -20, 1, -20)
-    MessageText.Position = UDim2.new(0, 10, 0, 10)
+    MessageText.Size = UDim2.new(1, -16, 1, -12)
+    MessageText.Position = UDim2.new(0, 8, 0, 6)
     MessageText.BackgroundTransparency = 1
     MessageText.Text = text
     MessageText.TextColor3 = Color3.fromRGB(255, 255, 255)
-    MessageText.TextSize = 15
+    MessageText.TextSize = 13
     MessageText.Font = Enum.Font.Gotham
     MessageText.TextWrapped = true
     MessageText.TextXAlignment = Enum.TextXAlignment.Left
     MessageText.TextYAlignment = Enum.TextYAlignment.Top
     MessageText.Parent = Bubble
     
-    -- Tính toán chiều cao
+    -- Tính toán chiều cao - COMPACT
     local textBounds = MessageText.TextBounds
-    local height = math.max(textBounds.Y + 20, 40)
+    local height = math.max(textBounds.Y + 12, 32)
     
     Bubble.Size = UDim2.new(0.85, 0, 0, height)
     MessageFrame.Size = UDim2.new(1, -10, 0, height)
@@ -351,10 +350,10 @@ end)
 task.wait(0.5)
 createChatMessage("👋 Xin chào! Tôi là Lulcat. Hỏi tôi bất cứ điều gì!", false)
 
--- Opening animation
+-- Opening animation - COMPACT SIZE
 MainFrame.Size = UDim2.new(0, 0, 0, 0)
 TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back), {
-    Size = UDim2.new(0, 450, 0, 550)
+    Size = UDim2.new(0, 320, 0, 420)
 }):Play()
 
 print("✅ Lulcat Chatbot UI loaded successfully!")
