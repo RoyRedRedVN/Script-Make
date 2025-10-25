@@ -1,4 +1,4 @@
--- ZeroGPT Mobile UI - Vertical Style
+-- ZeroGPT Mobile UI - Horizontal Style
 local TweenService = game:GetService("TweenService")
 local HttpService = game:GetService("HttpService")
 local UserInputService = game:GetService("UserInputService")
@@ -28,15 +28,15 @@ local ScreenGui = create("ScreenGui", {
     Parent = LocalPlayer:WaitForChild("PlayerGui")
 })
 
--- Main Frame - Mobile Vertical
+-- Main Frame - Horizontal
 local MainFrame = create("Frame", {
-    Size = UDim2.new(0, 340, 0, 600),
-    Position = UDim2.new(0.5, -170, 0.5, -300),
+    Size = UDim2.new(0, 600, 0, 350),
+    Position = UDim2.new(0.5, -300, 0.5, -175),
     BackgroundColor3 = Color3.fromRGB(10, 10, 15),
     BorderSizePixel = 0,
     Parent = ScreenGui
 })
-addCorner(MainFrame, 20)
+addCorner(MainFrame, 18)
 
 -- Gradient Background
 local BGGradient = create("UIGradient", {
@@ -44,12 +44,12 @@ local BGGradient = create("UIGradient", {
         ColorSequenceKeypoint.new(0, Color3.fromRGB(15, 15, 25)),
         ColorSequenceKeypoint.new(1, Color3.fromRGB(25, 15, 35))
     },
-    Rotation = 135,
+    Rotation = 90,
     Parent = MainFrame
 })
 
 -- Border Glow
-local Stroke = create("UIStroke", {
+create("UIStroke", {
     Color = Color3.fromRGB(138, 43, 226),
     Transparency = 0.6,
     Thickness = 2,
@@ -58,22 +58,22 @@ local Stroke = create("UIStroke", {
 
 -- Header
 local Header = create("Frame", {
-    Size = UDim2.new(1, 0, 0, 70),
+    Size = UDim2.new(1, 0, 0, 55),
     BackgroundTransparency = 1,
     Parent = MainFrame
 })
 
--- Logo Circle
+-- Logo
 local LogoCircle = create("Frame", {
-    Size = UDim2.new(0, 50, 0, 50),
-    Position = UDim2.new(0, 20, 0, 10),
+    Size = UDim2.new(0, 42, 0, 42),
+    Position = UDim2.new(0, 15, 0, 7),
     BackgroundColor3 = Color3.fromRGB(138, 43, 226),
     BorderSizePixel = 0,
     Parent = Header
 })
-addCorner(LogoCircle, 25)
+addCorner(LogoCircle, 21)
 
-local LogoGradient = create("UIGradient", {
+create("UIGradient", {
     Color = ColorSequence.new{
         ColorSequenceKeypoint.new(0, Color3.fromRGB(138, 43, 226)),
         ColorSequenceKeypoint.new(1, Color3.fromRGB(168, 85, 247))
@@ -82,86 +82,86 @@ local LogoGradient = create("UIGradient", {
     Parent = LogoCircle
 })
 
-local Logo = create("TextLabel", {
+create("TextLabel", {
     Size = UDim2.new(1, 0, 1, 0),
     BackgroundTransparency = 1,
     Text = "🤖",
-    TextSize = 26,
+    TextSize = 22,
     Font = Enum.Font.GothamBold,
     TextColor3 = Color3.fromRGB(255, 255, 255),
     Parent = LogoCircle
 })
 
 -- Title
-local Title = create("TextLabel", {
-    Size = UDim2.new(0, 150, 0, 30),
-    Position = UDim2.new(0, 80, 0, 10),
+create("TextLabel", {
+    Size = UDim2.new(0, 120, 0, 25),
+    Position = UDim2.new(0, 65, 0, 10),
     BackgroundTransparency = 1,
     Text = "zeroGPT",
     TextColor3 = Color3.fromRGB(255, 255, 255),
-    TextSize = 22,
+    TextSize = 19,
     Font = Enum.Font.GothamBold,
     TextXAlignment = Enum.TextXAlignment.Left,
     Parent = Header
 })
 
--- Version Badge
+-- Version
 local VersionBadge = create("Frame", {
-    Size = UDim2.new(0, 50, 0, 22),
-    Position = UDim2.new(0, 80, 0, 38),
+    Size = UDim2.new(0, 45, 0, 20),
+    Position = UDim2.new(0, 65, 0, 32),
     BackgroundColor3 = Color3.fromRGB(59, 130, 246),
     BorderSizePixel = 0,
     Parent = Header
 })
-addCorner(VersionBadge, 11)
+addCorner(VersionBadge, 10)
 
 create("TextLabel", {
     Size = UDim2.new(1, 0, 1, 0),
     BackgroundTransparency = 1,
     Text = "v2.5",
     TextColor3 = Color3.fromRGB(255, 255, 255),
-    TextSize = 12,
+    TextSize = 11,
     Font = Enum.Font.GothamBold,
     Parent = VersionBadge
 })
 
--- Status Badges
+-- Badges
 local FlashBadge = create("Frame", {
-    Size = UDim2.new(0, 55, 0, 22),
-    Position = UDim2.new(1, -125, 0, 24),
+    Size = UDim2.new(0, 70, 0, 24),
+    Position = UDim2.new(1, -180, 0, 16),
     BackgroundColor3 = Color3.fromRGB(168, 85, 247),
     BackgroundTransparency = 0.2,
     BorderSizePixel = 0,
     Parent = Header
 })
-addCorner(FlashBadge, 11)
+addCorner(FlashBadge, 12)
 
 create("TextLabel", {
     Size = UDim2.new(1, 0, 1, 0),
     BackgroundTransparency = 1,
     Text = "⚡ Flash",
     TextColor3 = Color3.fromRGB(255, 255, 255),
-    TextSize = 11,
+    TextSize = 12,
     Font = Enum.Font.GothamBold,
     Parent = FlashBadge
 })
 
 local ProBadge = create("Frame", {
-    Size = UDim2.new(0, 50, 0, 22),
-    Position = UDim2.new(1, -65, 0, 24),
+    Size = UDim2.new(0, 65, 0, 24),
+    Position = UDim2.new(1, -105, 0, 16),
     BackgroundColor3 = Color3.fromRGB(234, 179, 8),
     BackgroundTransparency = 0.2,
     BorderSizePixel = 0,
     Parent = Header
 })
-addCorner(ProBadge, 11)
+addCorner(ProBadge, 12)
 
 create("TextLabel", {
     Size = UDim2.new(1, 0, 1, 0),
     BackgroundTransparency = 1,
     Text = "👑 Pro",
     TextColor3 = Color3.fromRGB(255, 255, 255),
-    TextSize = 11,
+    TextSize = 12,
     Font = Enum.Font.GothamBold,
     Parent = ProBadge
 })
@@ -169,7 +169,7 @@ create("TextLabel", {
 -- Close Button
 local CloseButton = create("TextButton", {
     Size = UDim2.new(0, 35, 0, 35),
-    Position = UDim2.new(1, -45, 0, 17.5),
+    Position = UDim2.new(1, -45, 0, 10),
     BackgroundColor3 = Color3.fromRGB(239, 68, 68),
     BackgroundTransparency = 0.2,
     Text = "×",
@@ -181,10 +181,10 @@ local CloseButton = create("TextButton", {
 })
 addCorner(CloseButton, 17.5)
 
--- Separator Line
-local Separator = create("Frame", {
-    Size = UDim2.new(1, -40, 0, 1),
-    Position = UDim2.new(0, 20, 0, 75),
+-- Separator
+create("Frame", {
+    Size = UDim2.new(1, -30, 0, 1),
+    Position = UDim2.new(0, 15, 0, 60),
     BackgroundColor3 = Color3.fromRGB(138, 43, 226),
     BackgroundTransparency = 0.7,
     BorderSizePixel = 0,
@@ -193,11 +193,11 @@ local Separator = create("Frame", {
 
 -- Chat Container
 local ChatContainer = create("ScrollingFrame", {
-    Size = UDim2.new(1, -30, 1, -170),
-    Position = UDim2.new(0, 15, 0, 85),
+    Size = UDim2.new(1, -30, 1, -140),
+    Position = UDim2.new(0, 15, 0, 70),
     BackgroundTransparency = 1,
     BorderSizePixel = 0,
-    ScrollBarThickness = 4,
+    ScrollBarThickness = 5,
     ScrollBarImageColor3 = Color3.fromRGB(168, 85, 247),
     ScrollBarImageTransparency = 0.5,
     CanvasSize = UDim2.new(0, 0, 0, 0),
@@ -205,9 +205,8 @@ local ChatContainer = create("ScrollingFrame", {
 })
 
 local ChatLayout = create("UIListLayout", {
-    Padding = UDim.new(0, 12),
+    Padding = UDim.new(0, 10),
     SortOrder = Enum.SortOrder.LayoutOrder,
-    HorizontalAlignment = Enum.HorizontalAlignment.Center,
     Parent = ChatContainer
 })
 
@@ -219,14 +218,14 @@ create("UIPadding", {
 
 -- Input Container
 local InputContainer = create("Frame", {
-    Size = UDim2.new(1, -30, 0, 70),
-    Position = UDim2.new(0, 15, 1, -80),
+    Size = UDim2.new(1, -30, 0, 60),
+    Position = UDim2.new(0, 15, 1, -70),
     BackgroundColor3 = Color3.fromRGB(20, 20, 30),
     BackgroundTransparency = 0.3,
     BorderSizePixel = 0,
     Parent = MainFrame
 })
-addCorner(InputContainer, 16)
+addCorner(InputContainer, 14)
 
 local InputStroke = create("UIStroke", {
     Color = Color3.fromRGB(138, 43, 226),
@@ -237,8 +236,8 @@ local InputStroke = create("UIStroke", {
 
 -- Input Box
 local InputBox = create("TextBox", {
-    Size = UDim2.new(1, -80, 1, -20),
-    Position = UDim2.new(0, 15, 0, 10),
+    Size = UDim2.new(1, -75, 1, -16),
+    Position = UDim2.new(0, 12, 0, 8),
     BackgroundTransparency = 1,
     Text = "",
     PlaceholderText = "Ask me anything...",
@@ -255,19 +254,19 @@ local InputBox = create("TextBox", {
 
 -- Send Button
 local SendButton = create("TextButton", {
-    Size = UDim2.new(0, 50, 0, 50),
-    Position = UDim2.new(1, -60, 0.5, -25),
+    Size = UDim2.new(0, 50, 0, 48),
+    Position = UDim2.new(1, -56, 0.5, -24),
     BackgroundColor3 = Color3.fromRGB(138, 43, 226),
     Text = "➤",
     TextColor3 = Color3.fromRGB(255, 255, 255),
-    TextSize = 20,
+    TextSize = 18,
     Font = Enum.Font.GothamBold,
     BorderSizePixel = 0,
     Parent = InputContainer
 })
-addCorner(SendButton, 25)
+addCorner(SendButton, 12)
 
-local SendGradient = create("UIGradient", {
+create("UIGradient", {
     Color = ColorSequence.new{
         ColorSequenceKeypoint.new(0, Color3.fromRGB(138, 43, 226)),
         ColorSequenceKeypoint.new(1, Color3.fromRGB(168, 85, 247))
@@ -306,24 +305,24 @@ CloseButton.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
 end)
 
--- Chat Functions
+-- Chat
 local messageCount = 0
 
 local function createTypingIndicator()
     local typing = create("Frame", {
         Name = "Typing",
-        Size = UDim2.new(0.3, 0, 0, 50),
+        Size = UDim2.new(0, 80, 0, 45),
         BackgroundColor3 = Color3.fromRGB(30, 30, 45),
         BackgroundTransparency = 0.3,
         BorderSizePixel = 0,
         Parent = ChatContainer
     })
-    addCorner(typing, 14)
+    addCorner(typing, 12)
     
     for i = 1, 3 do
         local dot = create("Frame", {
             Size = UDim2.new(0, 10, 0, 10),
-            Position = UDim2.new(0, 20 + (i-1) * 20, 0.5, -5),
+            Position = UDim2.new(0, 20 + (i-1) * 18, 0.5, -5),
             BackgroundColor3 = Color3.fromRGB(168, 85, 247),
             BorderSizePixel = 0,
             Parent = typing
@@ -332,9 +331,9 @@ local function createTypingIndicator()
         
         task.spawn(function()
             while typing.Parent do
-                tween(dot, 0.5, {Position = UDim2.new(0, 20 + (i-1) * 20, 0.5, -10), BackgroundTransparency = 0.3}, Enum.EasingStyle.Sine)
+                tween(dot, 0.5, {Position = UDim2.new(0, 20 + (i-1) * 18, 0.5, -10), BackgroundTransparency = 0.3}, Enum.EasingStyle.Sine)
                 task.wait(0.15 * i)
-                tween(dot, 0.5, {Position = UDim2.new(0, 20 + (i-1) * 20, 0.5, -5), BackgroundTransparency = 0}, Enum.EasingStyle.Sine)
+                tween(dot, 0.5, {Position = UDim2.new(0, 20 + (i-1) * 18, 0.5, -5), BackgroundTransparency = 0}, Enum.EasingStyle.Sine)
                 task.wait(0.5)
             end
         end)
@@ -363,10 +362,10 @@ local function createChatMessage(text, isUser)
         BorderSizePixel = 0,
         Parent = msgFrame
     })
-    addCorner(bubble, 16)
+    addCorner(bubble, 14)
     
     if isUser then
-        local gradient = create("UIGradient", {
+        create("UIGradient", {
             Color = ColorSequence.new{
                 ColorSequenceKeypoint.new(0, Color3.fromRGB(138, 43, 226)),
                 ColorSequenceKeypoint.new(1, Color3.fromRGB(168, 85, 247))
@@ -377,12 +376,12 @@ local function createChatMessage(text, isUser)
     end
     
     local msgText = create("TextLabel", {
-        Size = UDim2.new(1, -24, 1, -20),
-        Position = UDim2.new(0, 12, 0, 10),
+        Size = UDim2.new(1, -20, 1, -16),
+        Position = UDim2.new(0, 10, 0, 8),
         BackgroundTransparency = 1,
         Text = text,
         TextColor3 = Color3.fromRGB(255, 255, 255),
-        TextSize = 14,
+        TextSize = 13,
         Font = Enum.Font.Gotham,
         TextWrapped = true,
         TextXAlignment = isUser and Enum.TextXAlignment.Right or Enum.TextXAlignment.Left,
@@ -391,10 +390,10 @@ local function createChatMessage(text, isUser)
         Parent = bubble
     })
     
-    local height = math.max(msgText.TextBounds.Y + 20, 50)
-    local width = math.min(msgText.TextBounds.X + 24, 240)
+    local height = math.max(msgText.TextBounds.Y + 16, 45)
+    local width = math.min(msgText.TextBounds.X + 20, 400)
     
-    msgFrame.Size = UDim2.new(1, 0, 0, height + 8)
+    msgFrame.Size = UDim2.new(1, 0, 0, height + 5)
     
     task.wait(0.05)
     ChatContainer.CanvasSize = UDim2.new(0, 0, 0, ChatLayout.AbsoluteContentSize.Y + 20)
@@ -410,7 +409,7 @@ end
 local function sendToAI(message)
     local success, result = pcall(function()
         if not HttpService.HttpEnabled then
-            return "❌ Enable HttpService in Settings!"
+            return "❌ Enable HttpService!"
         end
         
         local url = "https://api.popcat.xyz/v2/lulcat?text=" .. HttpService:UrlEncode(message)
@@ -439,9 +438,9 @@ local function sendMessage()
     local text = InputBox.Text
     if text == "" then return end
     
-    tween(SendButton, 0.1, {Size = UDim2.new(0, 45, 0, 45)})
+    tween(SendButton, 0.1, {Size = UDim2.new(0, 46, 0, 44)})
     task.wait(0.1)
-    tween(SendButton, 0.1, {Size = UDim2.new(0, 50, 0, 50)})
+    tween(SendButton, 0.1, {Size = UDim2.new(0, 50, 0, 48)})
     
     createChatMessage(text, true)
     InputBox.Text = ""
@@ -485,9 +484,9 @@ addHover(SendButton, 0, 0.1)
 -- Opening
 MainFrame.Size = UDim2.new(0, 0, 0, 0)
 MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-tween(MainFrame, 0.5, {Size = UDim2.new(0, 340, 0, 600), Position = UDim2.new(0.5, -170, 0.5, -300)}, Enum.EasingStyle.Back)
+tween(MainFrame, 0.5, {Size = UDim2.new(0, 600, 0, 350), Position = UDim2.new(0.5, -300, 0.5, -175)}, Enum.EasingStyle.Back)
 
 task.wait(0.7)
-createChatMessage("👋 Hi! I'm ZeroGPT. How can I help you today?", false)
+createChatMessage("👋 Hi! I'm ZeroGPT. How can I help you?", false)
 
-print("✅ ZeroGPT Mobile UI loaded!")
+print("✅ ZeroGPT Horizontal UI loaded!")
