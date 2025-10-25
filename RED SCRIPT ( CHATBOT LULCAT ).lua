@@ -1,4 +1,4 @@
--- Custom Lulcat Chatbot UI (Không dùng Rayfield)
+-- Custom Lulcat Chatbot UI - FIXED FULL VERSION
 local TweenService = game:GetService("TweenService")
 local HttpService = game:GetService("HttpService")
 local UserInputService = game:GetService("UserInputService")
@@ -12,172 +12,153 @@ ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
--- Main Frame (cửa sổ chính) - NHỎ GỌN HỞN
+-- Main Frame
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 320, 0, 420)
-MainFrame.Position = UDim2.new(0.5, -160, 0.5, -210)
-MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+MainFrame.Size = UDim2.new(0, 380, 0, 500)
+MainFrame.Position = UDim2.new(0.5, -190, 0.5, -250)
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
 MainFrame.BorderSizePixel = 0
 MainFrame.Parent = ScreenGui
 
--- Bo góc cho MainFrame
 local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 12)
+MainCorner.CornerRadius = UDim.new(0, 15)
 MainCorner.Parent = MainFrame
 
--- Shadow effect
-local Shadow = Instance.new("ImageLabel")
-Shadow.Name = "Shadow"
-Shadow.Size = UDim2.new(1, 30, 1, 30)
-Shadow.Position = UDim2.new(0, -15, 0, -15)
-Shadow.BackgroundTransparency = 1
-Shadow.Image = "rbxasset://textures/ui/GuiImagePlaceholder.png"
-Shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-Shadow.ImageTransparency = 0.7
-Shadow.ZIndex = 0
-Shadow.Parent = MainFrame
-
--- Header (thanh tiêu đề) - GIẢM CHIỀU CAO
+-- Header
 local Header = Instance.new("Frame")
 Header.Name = "Header"
-Header.Size = UDim2.new(1, 0, 0, 40)
-Header.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
+Header.Size = UDim2.new(1, 0, 0, 45)
+Header.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
 Header.BorderSizePixel = 0
 Header.Parent = MainFrame
 
 local HeaderCorner = Instance.new("UICorner")
-HeaderCorner.CornerRadius = UDim.new(0, 12)
+HeaderCorner.CornerRadius = UDim.new(0, 15)
 HeaderCorner.Parent = Header
 
--- Fix góc dưới của Header
 local HeaderFix = Instance.new("Frame")
-HeaderFix.Size = UDim2.new(1, 0, 0, 12)
-HeaderFix.Position = UDim2.new(0, 0, 1, -12)
-HeaderFix.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
+HeaderFix.Size = UDim2.new(1, 0, 0, 15)
+HeaderFix.Position = UDim2.new(0, 0, 1, -15)
+HeaderFix.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
 HeaderFix.BorderSizePixel = 0
 HeaderFix.Parent = Header
 
--- Title - GIẢM FONT SIZE
+-- Title
 local Title = Instance.new("TextLabel")
-Title.Name = "Title"
-Title.Size = UDim2.new(1, -80, 1, 0)
-Title.Position = UDim2.new(0, 12, 0, 0)
+Title.Size = UDim2.new(1, -100, 1, 0)
+Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
 Title.Text = "🐱 Lulcat Chat"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextSize = 16
+Title.TextSize = 18
 Title.Font = Enum.Font.GothamBold
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = Header
 
--- Close Button - NHỎ HƠN
-local CloseButton = Instance.new("TextButton")
-CloseButton.Name = "CloseButton"
-CloseButton.Size = UDim2.new(0, 28, 0, 28)
-CloseButton.Position = UDim2.new(1, -36, 0.5, -14)
-CloseButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
-CloseButton.Text = "✕"
-CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseButton.TextSize = 16
-CloseButton.Font = Enum.Font.GothamBold
-CloseButton.BorderSizePixel = 0
-CloseButton.Parent = Header
-
-local CloseCorner = Instance.new("UICorner")
-CloseCorner.CornerRadius = UDim.new(0, 6)
-CloseCorner.Parent = CloseButton
-
--- History Button (nút xem lịch sử)
+-- History Button
 local HistoryButton = Instance.new("TextButton")
-HistoryButton.Name = "HistoryButton"
-HistoryButton.Size = UDim2.new(0, 28, 0, 28)
-HistoryButton.Position = UDim2.new(1, -70, 0.5, -14)
-HistoryButton.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
+HistoryButton.Size = UDim2.new(0, 32, 0, 32)
+HistoryButton.Position = UDim2.new(1, -75, 0.5, -16)
+HistoryButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+HistoryButton.BackgroundTransparency = 0.2
 HistoryButton.Text = "📜"
-HistoryButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-HistoryButton.TextSize = 14
+HistoryButton.TextSize = 16
 HistoryButton.Font = Enum.Font.GothamBold
 HistoryButton.BorderSizePixel = 0
 HistoryButton.Parent = Header
 
 local HistoryCorner = Instance.new("UICorner")
-HistoryCorner.CornerRadius = UDim.new(0, 6)
+HistoryCorner.CornerRadius = UDim.new(0, 8)
 HistoryCorner.Parent = HistoryButton
 
--- Chat List Container - COMPACT
+-- Close Button
+local CloseButton = Instance.new("TextButton")
+CloseButton.Size = UDim2.new(0, 32, 0, 32)
+CloseButton.Position = UDim2.new(1, -37, 0.5, -16)
+CloseButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+CloseButton.Text = "✕"
+CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseButton.TextSize = 18
+CloseButton.Font = Enum.Font.GothamBold
+CloseButton.BorderSizePixel = 0
+CloseButton.Parent = Header
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 8)
+CloseCorner.Parent = CloseButton
+
+-- Chat Container (ScrollingFrame)
 local ChatContainer = Instance.new("ScrollingFrame")
 ChatContainer.Name = "ChatContainer"
-ChatContainer.Size = UDim2.new(1, -16, 1, -100)
-ChatContainer.Position = UDim2.new(0, 8, 0, 48)
-ChatContainer.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
+ChatContainer.Size = UDim2.new(1, -20, 1, -115)
+ChatContainer.Position = UDim2.new(0, 10, 0, 55)
+ChatContainer.BackgroundColor3 = Color3.fromRGB(40, 40, 52)
 ChatContainer.BorderSizePixel = 0
-ChatContainer.ScrollBarThickness = 4
-ChatContainer.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 120)
+ChatContainer.ScrollBarThickness = 6
+ChatContainer.ScrollBarImageColor3 = Color3.fromRGB(88, 101, 242)
 ChatContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
 ChatContainer.Parent = MainFrame
 
 local ChatCorner = Instance.new("UICorner")
-ChatCorner.CornerRadius = UDim.new(0, 8)
+ChatCorner.CornerRadius = UDim.new(0, 10)
 ChatCorner.Parent = ChatContainer
 
--- UIListLayout cho chat messages - PADDING NHỎ HƠN
+-- UIListLayout cho messages
 local ChatLayout = Instance.new("UIListLayout")
-ChatLayout.Padding = UDim.new(0, 6)
+ChatLayout.Padding = UDim.new(0, 8)
 ChatLayout.SortOrder = Enum.SortOrder.LayoutOrder
+ChatLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 ChatLayout.Parent = ChatContainer
 
--- UIPadding cho ChatContainer
 local ChatPadding = Instance.new("UIPadding")
-ChatPadding.PaddingTop = UDim.new(0, 8)
-ChatPadding.PaddingBottom = UDim.new(0, 8)
-ChatPadding.PaddingLeft = UDim.new(0, 8)
-ChatPadding.PaddingRight = UDim.new(0, 8)
+ChatPadding.PaddingTop = UDim.new(0, 10)
+ChatPadding.PaddingBottom = UDim.new(0, 10)
+ChatPadding.PaddingLeft = UDim.new(0, 10)
+ChatPadding.PaddingRight = UDim.new(0, 10)
 ChatPadding.Parent = ChatContainer
 
--- Input Container - COMPACT
+-- Input Container
 local InputContainer = Instance.new("Frame")
-InputContainer.Name = "InputContainer"
-InputContainer.Size = UDim2.new(1, -16, 0, 45)
-InputContainer.Position = UDim2.new(0, 8, 1, -52)
-InputContainer.BackgroundColor3 = Color3.fromRGB(30, 30, 42)
+InputContainer.Size = UDim2.new(1, -20, 0, 50)
+InputContainer.Position = UDim2.new(0, 10, 1, -60)
+InputContainer.BackgroundColor3 = Color3.fromRGB(40, 40, 52)
 InputContainer.BorderSizePixel = 0
 InputContainer.Parent = MainFrame
 
 local InputCorner = Instance.new("UICorner")
-InputCorner.CornerRadius = UDim.new(0, 8)
+InputCorner.CornerRadius = UDim.new(0, 10)
 InputCorner.Parent = InputContainer
 
--- TextBox (ô nhập) - COMPACT
+-- TextBox
 local InputBox = Instance.new("TextBox")
-InputBox.Name = "InputBox"
-InputBox.Size = UDim2.new(1, -60, 1, -12)
-InputBox.Position = UDim2.new(0, 8, 0, 6)
+InputBox.Size = UDim2.new(1, -70, 1, -12)
+InputBox.Position = UDim2.new(0, 10, 0, 6)
 InputBox.BackgroundTransparency = 1
 InputBox.Text = ""
 InputBox.PlaceholderText = "Nhập tin nhắn..."
 InputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-InputBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 160)
+InputBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 170)
 InputBox.TextSize = 14
 InputBox.Font = Enum.Font.Gotham
 InputBox.TextXAlignment = Enum.TextXAlignment.Left
 InputBox.ClearTextOnFocus = false
 InputBox.Parent = InputContainer
 
--- Send Button - COMPACT
+-- Send Button
 local SendButton = Instance.new("TextButton")
-SendButton.Name = "SendButton"
-SendButton.Size = UDim2.new(0, 40, 0, 33)
-SendButton.Position = UDim2.new(1, -46, 0.5, -16.5)
+SendButton.Size = UDim2.new(0, 50, 0, 38)
+SendButton.Position = UDim2.new(1, -56, 0.5, -19)
 SendButton.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
-SendButton.Text = "📤"
-SendButton.TextSize = 16
+SendButton.Text = "▶"
+SendButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+SendButton.TextSize = 18
 SendButton.Font = Enum.Font.GothamBold
 SendButton.BorderSizePixel = 0
 SendButton.Parent = InputContainer
 
 local SendCorner = Instance.new("UICorner")
-SendCorner.CornerRadius = UDim.new(0, 8)
+SendCorner.CornerRadius = UDim.new(0, 10)
 SendCorner.Parent = SendButton
 
 -- Drag functionality
@@ -214,62 +195,23 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- Close button functionality
+-- Close button
 CloseButton.MouseButton1Click:Connect(function()
-    local tween = TweenService:Create(MainFrame, TweenInfo.new(0.3), {
+    TweenService:Create(MainFrame, TweenInfo.new(0.3), {
         Size = UDim2.new(0, 0, 0, 0)
-    })
-    tween:Play()
-    tween.Completed:Connect(function()
-        ScreenGui:Destroy()
-    end)
-end)
-
--- Hover effects
-CloseButton.MouseEnter:Connect(function()
-    TweenService:Create(CloseButton, TweenInfo.new(0.2), {
-        BackgroundColor3 = Color3.fromRGB(255, 70, 70)
     }):Play()
+    task.wait(0.3)
+    ScreenGui:Destroy()
 end)
 
-CloseButton.MouseLeave:Connect(function()
-    TweenService:Create(CloseButton, TweenInfo.new(0.2), {
-        BackgroundColor3 = Color3.fromRGB(220, 50, 50)
-    }):Play()
-end)
-
-HistoryButton.MouseEnter:Connect(function()
-    TweenService:Create(HistoryButton, TweenInfo.new(0.2), {
-        BackgroundColor3 = Color3.fromRGB(108, 121, 255)
-    }):Play()
-end)
-
-HistoryButton.MouseLeave:Connect(function()
-    TweenService:Create(HistoryButton, TweenInfo.new(0.2), {
-        BackgroundColor3 = Color3.fromRGB(88, 101, 242)
-    }):Play()
-end)
-
-SendButton.MouseEnter:Connect(function()
-    TweenService:Create(SendButton, TweenInfo.new(0.2), {
-        BackgroundColor3 = Color3.fromRGB(108, 121, 255)
-    }):Play()
-end)
-
-SendButton.MouseLeave:Connect(function()
-    TweenService:Create(SendButton, TweenInfo.new(0.2), {
-        BackgroundColor3 = Color3.fromRGB(88, 101, 242)
-    }):Play()
-end)
-
--- Hàm tạo chat message
+-- Chat History Data
 local messageCount = 0
-local chatHistoryData = {} -- Lưu lịch sử chat
+local chatHistoryData = {}
 
+-- Function to create chat message
 function createChatMessage(text, isUser)
     messageCount = messageCount + 1
     
-    -- Lưu vào history
     table.insert(chatHistoryData, {
         text = text,
         isUser = isUser,
@@ -280,61 +222,64 @@ function createChatMessage(text, isUser)
     MessageFrame.Name = "Message" .. messageCount
     MessageFrame.Size = UDim2.new(1, -10, 0, 0)
     MessageFrame.BackgroundTransparency = 1
-    MessageFrame.BorderSizePixel = 0
     MessageFrame.LayoutOrder = messageCount
     MessageFrame.Parent = ChatContainer
     
     local Bubble = Instance.new("Frame")
     Bubble.Name = "Bubble"
-    Bubble.Size = UDim2.new(0.85, 0, 0, 0)
-    Bubble.BackgroundColor3 = isUser and Color3.fromRGB(88, 101, 242) or Color3.fromRGB(45, 45, 60)
+    Bubble.Size = UDim2.new(0.75, 0, 0, 0)
+    Bubble.BackgroundColor3 = isUser and Color3.fromRGB(88, 101, 242) or Color3.fromRGB(60, 60, 75)
     Bubble.BorderSizePixel = 0
     Bubble.Parent = MessageFrame
     
     if isUser then
-        Bubble.Position = UDim2.new(0.15, 0, 0, 0)
+        Bubble.Position = UDim2.new(0.25, 0, 0, 0)
     else
         Bubble.Position = UDim2.new(0, 0, 0, 0)
     end
     
     local BubbleCorner = Instance.new("UICorner")
-    BubbleCorner.CornerRadius = UDim.new(0, 10)
+    BubbleCorner.CornerRadius = UDim.new(0, 12)
     BubbleCorner.Parent = Bubble
     
     local MessageText = Instance.new("TextLabel")
     MessageText.Name = "MessageText"
-    MessageText.Size = UDim2.new(1, -16, 1, -12)
-    MessageText.Position = UDim2.new(0, 8, 0, 6)
+    MessageText.Size = UDim2.new(1, -20, 1, -16)
+    MessageText.Position = UDim2.new(0, 10, 0, 8)
     MessageText.BackgroundTransparency = 1
     MessageText.Text = text
     MessageText.TextColor3 = Color3.fromRGB(255, 255, 255)
-    MessageText.TextSize = 13
+    MessageText.TextSize = 14
     MessageText.Font = Enum.Font.Gotham
     MessageText.TextWrapped = true
     MessageText.TextXAlignment = Enum.TextXAlignment.Left
     MessageText.TextYAlignment = Enum.TextYAlignment.Top
     MessageText.Parent = Bubble
     
-    -- Tính toán chiều cao - COMPACT
+    -- Calculate height
     local textBounds = MessageText.TextBounds
-    local height = math.max(textBounds.Y + 12, 32)
+    local height = math.max(textBounds.Y + 16, 40)
     
-    Bubble.Size = UDim2.new(0.85, 0, 0, height)
-    MessageFrame.Size = UDim2.new(1, -10, 0, height)
+    Bubble.Size = UDim2.new(0.75, 0, 0, height)
+    MessageFrame.Size = UDim2.new(1, -10, 0, height + 5)
     
-    -- Update canvas size
-    task.wait()
-    ChatContainer.CanvasSize = UDim2.new(0, 0, 0, ChatLayout.AbsoluteContentSize.Y + 16)
+    -- Update canvas
+    task.wait(0.05)
+    ChatContainer.CanvasSize = UDim2.new(0, 0, 0, ChatLayout.AbsoluteContentSize.Y + 20)
+    
+    -- Auto scroll to bottom
     ChatContainer.CanvasPosition = Vector2.new(0, ChatContainer.CanvasSize.Y.Offset)
     
     -- Animation
     Bubble.Size = UDim2.new(0, 0, 0, height)
     TweenService:Create(Bubble, TweenInfo.new(0.3, Enum.EasingStyle.Back), {
-        Size = UDim2.new(0.85, 0, 0, height)
+        Size = UDim2.new(0.75, 0, 0, height)
     }):Play()
+    
+    return MessageFrame
 end
 
--- Hàm gửi đến API Lulcat
+-- API Function
 function sendToLulcat(message)
     local success, result = pcall(function()
         local encodedMessage = HttpService:UrlEncode(message)
@@ -345,135 +290,117 @@ function sendToLulcat(message)
         if data and data.error == false and data.message and data.message.text then
             return data.message.text
         else
-            return "⚠️ Không thể nhận phản hồi từ API"
+            return "⚠️ Không thể nhận phản hồi"
         end
     end)
     
-    if success then
-        return result
-    else
-        return "❌ Lỗi kết nối: Vui lòng thử lại"
-    end
+    return success and result or "❌ Lỗi kết nối API"
 end
 
--- Hàm xử lý gửi tin nhắn
+-- Send Message Function
 function sendMessage()
     local text = InputBox.Text
     if text == "" or text == nil then return end
     
-    -- Thêm tin nhắn người dùng
     createChatMessage(text, true)
     InputBox.Text = ""
     
-    -- Hiển thị typing indicator
-    createChatMessage("Lulcat đang trả lời...", false)
+    local typingMsg = createChatMessage("💭 Đang trả lời...", false)
     
-    -- Gửi đến API
     task.spawn(function()
         local response = sendToLulcat(text)
         
-        -- Xóa typing indicator
-        if ChatContainer:FindFirstChild("Message" .. messageCount) then
-            ChatContainer:FindFirstChild("Message" .. messageCount):Destroy()
+        if typingMsg and typingMsg.Parent then
+            typingMsg:Destroy()
             messageCount = messageCount - 1
+            table.remove(chatHistoryData, #chatHistoryData)
         end
         
-        -- Thêm phản hồi
         createChatMessage(response, false)
     end)
 end
 
--- Send button click
 SendButton.MouseButton1Click:Connect(sendMessage)
 
--- Enter key press
 InputBox.FocusLost:Connect(function(enterPressed)
     if enterPressed then
         sendMessage()
     end
 end)
 
--- Welcome message
-task.wait(0.5)
-createChatMessage("👋 Xin chào! Tôi là Lulcat. Hỏi tôi bất cứ điều gì!", false)
-
--- History Window (cửa sổ lịch sử)
+-- History Window
 local HistoryFrame = Instance.new("Frame")
-HistoryFrame.Name = "HistoryFrame"
-HistoryFrame.Size = UDim2.new(0, 300, 0, 400)
-HistoryFrame.Position = UDim2.new(0.5, -150, 0.5, -200)
-HistoryFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+HistoryFrame.Size = UDim2.new(0, 350, 0, 450)
+HistoryFrame.Position = UDim2.new(0.5, -175, 0.5, -225)
+HistoryFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
 HistoryFrame.BorderSizePixel = 0
 HistoryFrame.Visible = false
 HistoryFrame.Parent = ScreenGui
 
-local HistoryFrameCorner = Instance.new("UICorner")
-HistoryFrameCorner.CornerRadius = UDim.new(0, 12)
-HistoryFrameCorner.Parent = HistoryFrame
+local HistoryCorner = Instance.new("UICorner")
+HistoryCorner.CornerRadius = UDim.new(0, 15)
+HistoryCorner.Parent = HistoryFrame
 
--- History Header
 local HistoryHeader = Instance.new("Frame")
-HistoryHeader.Size = UDim2.new(1, 0, 0, 40)
-HistoryHeader.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
+HistoryHeader.Size = UDim2.new(1, 0, 0, 45)
+HistoryHeader.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
 HistoryHeader.BorderSizePixel = 0
 HistoryHeader.Parent = HistoryFrame
 
 local HistoryHeaderCorner = Instance.new("UICorner")
-HistoryHeaderCorner.CornerRadius = UDim.new(0, 12)
+HistoryHeaderCorner.CornerRadius = UDim.new(0, 15)
 HistoryHeaderCorner.Parent = HistoryHeader
 
 local HistoryHeaderFix = Instance.new("Frame")
-HistoryHeaderFix.Size = UDim2.new(1, 0, 0, 12)
-HistoryHeaderFix.Position = UDim2.new(0, 0, 1, -12)
-HistoryHeaderFix.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
+HistoryHeaderFix.Size = UDim2.new(1, 0, 0, 15)
+HistoryHeaderFix.Position = UDim2.new(0, 0, 1, -15)
+HistoryHeaderFix.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
 HistoryHeaderFix.BorderSizePixel = 0
 HistoryHeaderFix.Parent = HistoryHeader
 
 local HistoryTitle = Instance.new("TextLabel")
-HistoryTitle.Size = UDim2.new(1, -80, 1, 0)
-HistoryTitle.Position = UDim2.new(0, 12, 0, 0)
+HistoryTitle.Size = UDim2.new(1, -50, 1, 0)
+HistoryTitle.Position = UDim2.new(0, 15, 0, 0)
 HistoryTitle.BackgroundTransparency = 1
 HistoryTitle.Text = "📜 Lịch sử Chat"
 HistoryTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-HistoryTitle.TextSize = 16
+HistoryTitle.TextSize = 18
 HistoryTitle.Font = Enum.Font.GothamBold
 HistoryTitle.TextXAlignment = Enum.TextXAlignment.Left
 HistoryTitle.Parent = HistoryHeader
 
--- Close History Button
 local CloseHistoryBtn = Instance.new("TextButton")
-CloseHistoryBtn.Size = UDim2.new(0, 28, 0, 28)
-CloseHistoryBtn.Position = UDim2.new(1, -36, 0.5, -14)
+CloseHistoryBtn.Size = UDim2.new(0, 32, 0, 32)
+CloseHistoryBtn.Position = UDim2.new(1, -37, 0.5, -16)
 CloseHistoryBtn.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
 CloseHistoryBtn.Text = "✕"
 CloseHistoryBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseHistoryBtn.TextSize = 16
+CloseHistoryBtn.TextSize = 18
 CloseHistoryBtn.Font = Enum.Font.GothamBold
 CloseHistoryBtn.BorderSizePixel = 0
 CloseHistoryBtn.Parent = HistoryHeader
 
 local CloseHistoryCorner = Instance.new("UICorner")
-CloseHistoryCorner.CornerRadius = UDim.new(0, 6)
+CloseHistoryCorner.CornerRadius = UDim.new(0, 8)
 CloseHistoryCorner.Parent = CloseHistoryBtn
 
--- History Content
 local HistoryScroll = Instance.new("ScrollingFrame")
-HistoryScroll.Size = UDim2.new(1, -16, 1, -88)
-HistoryScroll.Position = UDim2.new(0, 8, 0, 48)
-HistoryScroll.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
+HistoryScroll.Size = UDim2.new(1, -20, 1, -110)
+HistoryScroll.Position = UDim2.new(0, 10, 0, 55)
+HistoryScroll.BackgroundColor3 = Color3.fromRGB(40, 40, 52)
 HistoryScroll.BorderSizePixel = 0
-HistoryScroll.ScrollBarThickness = 4
-HistoryScroll.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 120)
+HistoryScroll.ScrollBarThickness = 6
+HistoryScroll.ScrollBarImageColor3 = Color3.fromRGB(88, 101, 242)
 HistoryScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 HistoryScroll.Parent = HistoryFrame
 
 local HistoryScrollCorner = Instance.new("UICorner")
-HistoryScrollCorner.CornerRadius = UDim.new(0, 8)
+HistoryScrollCorner.CornerRadius = UDim.new(0, 10)
 HistoryScrollCorner.Parent = HistoryScroll
 
 local HistoryText = Instance.new("TextLabel")
-HistoryText.Size = UDim2.new(1, -16, 1, 0)
-HistoryText.Position = UDim2.new(0, 8, 0, 8)
+HistoryText.Size = UDim2.new(1, -20, 1, 0)
+HistoryText.Position = UDim2.new(0, 10, 0, 10)
 HistoryText.BackgroundTransparency = 1
 HistoryText.Text = "Chưa có lịch sử..."
 HistoryText.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -484,23 +411,22 @@ HistoryText.TextXAlignment = Enum.TextXAlignment.Left
 HistoryText.TextYAlignment = Enum.TextYAlignment.Top
 HistoryText.Parent = HistoryScroll
 
--- Clear History Button
 local ClearHistoryBtn = Instance.new("TextButton")
-ClearHistoryBtn.Size = UDim2.new(1, -16, 0, 32)
-ClearHistoryBtn.Position = UDim2.new(0, 8, 1, -40)
+ClearHistoryBtn.Size = UDim2.new(1, -20, 0, 40)
+ClearHistoryBtn.Position = UDim2.new(0, 10, 1, -50)
 ClearHistoryBtn.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
 ClearHistoryBtn.Text = "🗑️ Xóa lịch sử"
 ClearHistoryBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-ClearHistoryBtn.TextSize = 14
+ClearHistoryBtn.TextSize = 15
 ClearHistoryBtn.Font = Enum.Font.GothamBold
 ClearHistoryBtn.BorderSizePixel = 0
 ClearHistoryBtn.Parent = HistoryFrame
 
 local ClearHistoryCorner = Instance.new("UICorner")
-ClearHistoryCorner.CornerRadius = UDim.new(0, 8)
+ClearHistoryCorner.CornerRadius = UDim.new(0, 10)
 ClearHistoryCorner.Parent = ClearHistoryBtn
 
--- Function to update history display
+-- Update History Display
 function updateHistoryDisplay()
     if #chatHistoryData == 0 then
         HistoryText.Text = "Chưa có lịch sử..."
@@ -513,9 +439,9 @@ function updateHistoryDisplay()
         end
         HistoryText.Text = historyString
         
-        task.wait()
+        task.wait(0.05)
         local textHeight = HistoryText.TextBounds.Y
-        HistoryScroll.CanvasSize = UDim2.new(0, 0, 0, textHeight + 16)
+        HistoryScroll.CanvasSize = UDim2.new(0, 0, 0, textHeight + 20)
     end
 end
 
@@ -524,12 +450,11 @@ HistoryButton.MouseButton1Click:Connect(function()
     updateHistoryDisplay()
     HistoryFrame.Visible = true
     HistoryFrame.Size = UDim2.new(0, 0, 0, 0)
-    TweenService:Create(HistoryFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back), {
-        Size = UDim2.new(0, 300, 0, 400)
+    TweenService:Create(HistoryFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back), {
+        Size = UDim2.new(0, 350, 0, 450)
     }):Play()
 end)
 
--- Close History
 CloseHistoryBtn.MouseButton1Click:Connect(function()
     TweenService:Create(HistoryFrame, TweenInfo.new(0.3), {
         Size = UDim2.new(0, 0, 0, 0)
@@ -538,12 +463,10 @@ CloseHistoryBtn.MouseButton1Click:Connect(function()
     HistoryFrame.Visible = false
 end)
 
--- Clear History
 ClearHistoryBtn.MouseButton1Click:Connect(function()
     chatHistoryData = {}
     messageCount = 0
     
-    -- Xóa tất cả tin nhắn
     for _, child in ipairs(ChatContainer:GetChildren()) do
         if child:IsA("Frame") and child.Name:match("Message") then
             child:Destroy()
@@ -551,38 +474,38 @@ ClearHistoryBtn.MouseButton1Click:Connect(function()
     end
     
     updateHistoryDisplay()
-    createChatMessage("🗑️ Đã xóa lịch sử chat!", false)
+    createChatMessage("✅ Đã xóa lịch sử!", false)
 end)
 
--- Hover effects cho history buttons
-CloseHistoryBtn.MouseEnter:Connect(function()
-    TweenService:Create(CloseHistoryBtn, TweenInfo.new(0.2), {
-        BackgroundColor3 = Color3.fromRGB(255, 70, 70)
-    }):Play()
-end)
+-- Hover Effects
+local function addHoverEffect(button, normalColor, hoverColor)
+    button.MouseEnter:Connect(function()
+        TweenService:Create(button, TweenInfo.new(0.2), {
+            BackgroundColor3 = hoverColor
+        }):Play()
+    end)
+    
+    button.MouseLeave:Connect(function()
+        TweenService:Create(button, TweenInfo.new(0.2), {
+            BackgroundColor3 = normalColor
+        }):Play()
+    end)
+end
 
-CloseHistoryBtn.MouseLeave:Connect(function()
-    TweenService:Create(CloseHistoryBtn, TweenInfo.new(0.2), {
-        BackgroundColor3 = Color3.fromRGB(220, 50, 50)
-    }):Play()
-end)
+addHoverEffect(CloseButton, Color3.fromRGB(220, 50, 50), Color3.fromRGB(255, 70, 70))
+addHoverEffect(SendButton, Color3.fromRGB(88, 101, 242), Color3.fromRGB(108, 121, 255))
+addHoverEffect(HistoryButton, Color3.fromRGB(88, 101, 242), Color3.fromRGB(108, 121, 255))
+addHoverEffect(CloseHistoryBtn, Color3.fromRGB(220, 50, 50), Color3.fromRGB(255, 70, 70))
+addHoverEffect(ClearHistoryBtn, Color3.fromRGB(220, 50, 50), Color3.fromRGB(255, 70, 70))
 
-ClearHistoryBtn.MouseEnter:Connect(function()
-    TweenService:Create(ClearHistoryBtn, TweenInfo.new(0.2), {
-        BackgroundColor3 = Color3.fromRGB(255, 70, 70)
-    }):Play()
-end)
-
-ClearHistoryBtn.MouseLeave:Connect(function()
-    TweenService:Create(ClearHistoryBtn, TweenInfo.new(0.2), {
-        BackgroundColor3 = Color3.fromRGB(220, 50, 50)
-    }):Play()
-end)
-
--- Opening animation - COMPACT SIZE
+-- Opening Animation
 MainFrame.Size = UDim2.new(0, 0, 0, 0)
 TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back), {
-    Size = UDim2.new(0, 320, 0, 420)
+    Size = UDim2.new(0, 380, 0, 500)
 }):Play()
+
+-- Welcome Message
+task.wait(0.6)
+createChatMessage("👋 Xin chào! Tôi là Lulcat.\nHỏi tôi bất cứ điều gì nhé! 🐱", false)
 
 print("✅ Lulcat Chatbot UI loaded successfully!")
