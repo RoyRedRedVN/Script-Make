@@ -1,319 +1,423 @@
--- Custom Lulcat Chatbot UI - COMPACT VERSION
+-- ZeroGPT Chatbot UI - TikTok Style
 local TweenService = game:GetService("TweenService")
 local HttpService = game:GetService("HttpService")
 local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
--- Tạo ScreenGui
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "LulcatChatUI"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+-- Utility Functions
+local function create(class, props)
+    local obj = Instance.new(class)
+    for k, v in pairs(props) do obj[k] = v end
+    return obj
+end
 
--- Main Frame (Nhỏ hơn)
-local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 300, 0, 380)
-MainFrame.Position = UDim2.new(0.5, -150, 0.5, -190)
-MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-MainFrame.BorderSizePixel = 0
-MainFrame.Parent = ScreenGui
+local function tween(obj, time, props, style)
+    TweenService:Create(obj, TweenInfo.new(time, style or Enum.EasingStyle.Quad), props):Play()
+end
 
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 12)
-MainCorner.Parent = MainFrame
+local function addCorner(parent, radius)
+    return create("UICorner", {CornerRadius = UDim.new(0, radius), Parent = parent})
+end
 
--- Header (Nhỏ hơn)
-local Header = Instance.new("Frame")
-Header.Name = "Header"
-Header.Size = UDim2.new(1, 0, 0, 35)
-Header.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
-Header.BorderSizePixel = 0
-Header.Parent = MainFrame
+local function addStroke(parent, trans, color)
+    return create("UIStroke", {
+        Color = color or Color3.fromRGB(255, 255, 255),
+        Transparency = trans or 0.9,
+        Thickness = 1.5,
+        Parent = parent
+    })
+end
 
-local HeaderCorner = Instance.new("UICorner")
-HeaderCorner.CornerRadius = UDim.new(0, 12)
-HeaderCorner.Parent = Header
+-- Main UI
+local ScreenGui = create("ScreenGui", {
+    Name = "ZeroGPTUI",
+    ResetOnSpawn = false,
+    ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+    Parent = LocalPlayer:WaitForChild("PlayerGui")
+})
 
-local HeaderFix = Instance.new("Frame")
-HeaderFix.Size = UDim2.new(1, 0, 0, 12)
-HeaderFix.Position = UDim2.new(0, 0, 1, -12)
-HeaderFix.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
-HeaderFix.BorderSizePixel = 0
-HeaderFix.Parent = Header
+-- Main Frame - Dark Modern Style
+local MainFrame = create("Frame", {
+    Size = UDim2.new(0, 320, 0, 420),
+    Position = UDim2.new(0.5, -160, 0.5, -210),
+    BackgroundColor3 = Color3.fromRGB(15, 15, 20),
+    BackgroundTransparency = 0.05,
+    BorderSizePixel = 0,
+    Parent = ScreenGui
+})
+addCorner(MainFrame, 18)
+addStroke(MainFrame, 0.8, Color3.fromRGB(50, 50, 60))
 
--- Title (Nhỏ hơn)
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, -70, 1, 0)
-Title.Position = UDim2.new(0, 10, 0, 0)
-Title.BackgroundTransparency = 1
-Title.Text = "🐱 Lulcat"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextSize = 15
-Title.Font = Enum.Font.GothamBold
-Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.Parent = Header
+-- Header với Gradient TikTok style
+local Header = create("Frame", {
+    Size = UDim2.new(1, 0, 0, 50),
+    BackgroundColor3 = Color3.fromRGB(20, 20, 25),
+    BorderSizePixel = 0,
+    Parent = MainFrame
+})
+addCorner(Header, 18)
 
--- History Button (Nhỏ hơn)
-local HistoryButton = Instance.new("TextButton")
-HistoryButton.Size = UDim2.new(0, 26, 0, 26)
-HistoryButton.Position = UDim2.new(1, -60, 0.5, -13)
-HistoryButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-HistoryButton.BackgroundTransparency = 0.2
-HistoryButton.Text = "📜"
-HistoryButton.TextSize = 13
-HistoryButton.Font = Enum.Font.GothamBold
-HistoryButton.BorderSizePixel = 0
-HistoryButton.Parent = Header
+local HeaderFix = create("Frame", {
+    Size = UDim2.new(1, 0, 0, 18),
+    Position = UDim2.new(0, 0, 1, -18),
+    BackgroundColor3 = Color3.fromRGB(20, 20, 25),
+    BorderSizePixel = 0,
+    Parent = Header
+})
 
-local HistoryCorner = Instance.new("UICorner")
-HistoryCorner.CornerRadius = UDim.new(0, 6)
-HistoryCorner.Parent = HistoryButton
+-- Logo & Title
+local Logo = create("TextLabel", {
+    Size = UDim2.new(0, 40, 0, 40),
+    Position = UDim2.new(0, 12, 0.5, -20),
+    BackgroundColor3 = Color3.fromRGB(255, 59, 92),
+    Text = "🤖",
+    TextSize = 22,
+    Font = Enum.Font.GothamBold,
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    BorderSizePixel = 0,
+    Parent = Header
+})
+addCorner(Logo, 10)
 
--- Close Button (Nhỏ hơn)
-local CloseButton = Instance.new("TextButton")
-CloseButton.Size = UDim2.new(0, 26, 0, 26)
-CloseButton.Position = UDim2.new(1, -30, 0.5, -13)
-CloseButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
-CloseButton.Text = "✕"
-CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseButton.TextSize = 15
-CloseButton.Font = Enum.Font.GothamBold
-CloseButton.BorderSizePixel = 0
-CloseButton.Parent = Header
+local Title = create("TextLabel", {
+    Size = UDim2.new(1, -140, 1, 0),
+    Position = UDim2.new(0, 60, 0, 0),
+    BackgroundTransparency = 1,
+    Text = "zeroGPT",
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    TextSize = 18,
+    Font = Enum.Font.GothamBold,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    Parent = Header
+})
 
-local CloseCorner = Instance.new("UICorner")
-CloseCorner.CornerRadius = UDim.new(0, 6)
-CloseCorner.Parent = CloseButton
+local Version = create("TextLabel", {
+    Size = UDim2.new(0, 45, 0, 20),
+    Position = UDim2.new(0, 128, 0.5, -10),
+    BackgroundColor3 = Color3.fromRGB(59, 130, 246),
+    BackgroundTransparency = 0.2,
+    Text = "v2.5",
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    TextSize = 11,
+    Font = Enum.Font.GothamBold,
+    BorderSizePixel = 0,
+    Parent = Header
+})
+addCorner(Version, 6)
 
--- Chat Container (Nhỏ hơn)
-local ChatContainer = Instance.new("ScrollingFrame")
-ChatContainer.Name = "ChatContainer"
-ChatContainer.Size = UDim2.new(1, -16, 1, -90)
-ChatContainer.Position = UDim2.new(0, 8, 0, 43)
-ChatContainer.BackgroundColor3 = Color3.fromRGB(40, 40, 52)
-ChatContainer.BorderSizePixel = 0
-ChatContainer.ScrollBarThickness = 4
-ChatContainer.ScrollBarImageColor3 = Color3.fromRGB(88, 101, 242)
-ChatContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
-ChatContainer.Parent = MainFrame
+-- Badges
+local FlashBadge = create("TextLabel", {
+    Size = UDim2.new(0, 42, 0, 20),
+    Position = UDim2.new(1, -90, 0.5, -10),
+    BackgroundColor3 = Color3.fromRGB(168, 85, 247),
+    BackgroundTransparency = 0.2,
+    Text = "Flash",
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    TextSize = 10,
+    Font = Enum.Font.GothamBold,
+    BorderSizePixel = 0,
+    Parent = Header
+})
+addCorner(FlashBadge, 6)
 
-local ChatCorner = Instance.new("UICorner")
-ChatCorner.CornerRadius = UDim.new(0, 8)
-ChatCorner.Parent = ChatContainer
+local ProBadge = create("TextLabel", {
+    Size = UDim2.new(0, 35, 0, 20),
+    Position = UDim2.new(1, -44, 0.5, -10),
+    BackgroundColor3 = Color3.fromRGB(234, 179, 8),
+    BackgroundTransparency = 0.2,
+    Text = "Pro",
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    TextSize = 10,
+    Font = Enum.Font.GothamBold,
+    BorderSizePixel = 0,
+    Parent = Header
+})
+addCorner(ProBadge, 6)
 
--- UIListLayout cho messages
-local ChatLayout = Instance.new("UIListLayout")
-ChatLayout.Padding = UDim.new(0, 6)
-ChatLayout.SortOrder = Enum.SortOrder.LayoutOrder
-ChatLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-ChatLayout.Parent = ChatContainer
+-- Close Button
+local CloseButton = create("TextButton", {
+    Size = UDim2.new(0, 30, 0, 30),
+    Position = UDim2.new(1, -8, 0, 8),
+    AnchorPoint = Vector2.new(1, 0),
+    BackgroundColor3 = Color3.fromRGB(220, 50, 50),
+    BackgroundTransparency = 0.3,
+    Text = "×",
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    TextSize = 20,
+    Font = Enum.Font.GothamBold,
+    BorderSizePixel = 0,
+    Parent = MainFrame
+})
+addCorner(CloseButton, 8)
 
-local ChatPadding = Instance.new("UIPadding")
-ChatPadding.PaddingTop = UDim.new(0, 8)
-ChatPadding.PaddingBottom = UDim.new(0, 8)
-ChatPadding.PaddingLeft = UDim.new(0, 8)
-ChatPadding.PaddingRight = UDim.new(0, 8)
-ChatPadding.Parent = ChatContainer
+-- Chat Container
+local ChatContainer = create("ScrollingFrame", {
+    Size = UDim2.new(1, -20, 1, -120),
+    Position = UDim2.new(0, 10, 0, 60),
+    BackgroundColor3 = Color3.fromRGB(18, 18, 23),
+    BackgroundTransparency = 0.4,
+    BorderSizePixel = 0,
+    ScrollBarThickness = 5,
+    ScrollBarImageColor3 = Color3.fromRGB(255, 59, 92),
+    ScrollBarImageTransparency = 0.6,
+    CanvasSize = UDim2.new(0, 0, 0, 0),
+    Parent = MainFrame
+})
+addCorner(ChatContainer, 14)
+addStroke(ChatContainer, 0.9, Color3.fromRGB(40, 40, 50))
 
--- Input Container (Nhỏ hơn)
-local InputContainer = Instance.new("Frame")
-InputContainer.Size = UDim2.new(1, -16, 0, 42)
-InputContainer.Position = UDim2.new(0, 8, 1, -50)
-InputContainer.BackgroundColor3 = Color3.fromRGB(40, 40, 52)
-InputContainer.BorderSizePixel = 0
-InputContainer.Parent = MainFrame
+local ChatLayout = create("UIListLayout", {
+    Padding = UDim.new(0, 10),
+    SortOrder = Enum.SortOrder.LayoutOrder,
+    HorizontalAlignment = Enum.HorizontalAlignment.Center,
+    Parent = ChatContainer
+})
 
-local InputCorner = Instance.new("UICorner")
-InputCorner.CornerRadius = UDim.new(0, 8)
-InputCorner.Parent = InputContainer
+create("UIPadding", {
+    PaddingTop = UDim.new(0, 12),
+    PaddingBottom = UDim.new(0, 12),
+    PaddingLeft = UDim.new(0, 12),
+    PaddingRight = UDim.new(0, 12),
+    Parent = ChatContainer
+})
 
--- TextBox (Nhỏ hơn)
-local InputBox = Instance.new("TextBox")
-InputBox.Size = UDim2.new(1, -55, 1, -10)
-InputBox.Position = UDim2.new(0, 8, 0, 5)
-InputBox.BackgroundTransparency = 1
-InputBox.Text = ""
-InputBox.PlaceholderText = "Nhập tin nhắn..."
-InputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-InputBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 170)
-InputBox.TextSize = 13
-InputBox.Font = Enum.Font.Gotham
-InputBox.TextXAlignment = Enum.TextXAlignment.Left
-InputBox.ClearTextOnFocus = false
-InputBox.Parent = InputContainer
+-- Input Container - TikTok Style
+local InputContainer = create("Frame", {
+    Size = UDim2.new(1, -20, 0, 50),
+    Position = UDim2.new(0, 10, 1, -60),
+    BackgroundColor3 = Color3.fromRGB(25, 25, 32),
+    BackgroundTransparency = 0.2,
+    BorderSizePixel = 0,
+    Parent = MainFrame
+})
+addCorner(InputContainer, 14)
+local InputStroke = addStroke(InputContainer, 0.85, Color3.fromRGB(60, 60, 70))
 
--- Send Button (Nhỏ hơn)
-local SendButton = Instance.new("TextButton")
-SendButton.Size = UDim2.new(0, 42, 0, 32)
-SendButton.Position = UDim2.new(1, -47, 0.5, -16)
-SendButton.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
-SendButton.Text = "▶"
-SendButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-SendButton.TextSize = 15
-SendButton.Font = Enum.Font.GothamBold
-SendButton.BorderSizePixel = 0
-SendButton.Parent = InputContainer
+local InputBox = create("TextBox", {
+    Size = UDim2.new(1, -70, 1, -12),
+    Position = UDim2.new(0, 12, 0, 6),
+    BackgroundTransparency = 1,
+    Text = "",
+    PlaceholderText = "Ask me anything...",
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    PlaceholderColor3 = Color3.fromRGB(130, 130, 145),
+    TextSize = 14,
+    Font = Enum.Font.Gotham,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ClearTextOnFocus = false,
+    Parent = InputContainer
+})
 
-local SendCorner = Instance.new("UICorner")
-SendCorner.CornerRadius = UDim.new(0, 8)
-SendCorner.Parent = SendButton
+-- Send Button - TikTok Style
+local SendButton = create("TextButton", {
+    Size = UDim2.new(0, 50, 0, 38),
+    Position = UDim2.new(1, -56, 0.5, -19),
+    BackgroundColor3 = Color3.fromRGB(255, 59, 92),
+    BackgroundTransparency = 0.1,
+    Text = "▶",
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    TextSize = 16,
+    Font = Enum.Font.GothamBold,
+    BorderSizePixel = 0,
+    Parent = InputContainer
+})
+addCorner(SendButton, 12)
 
--- Drag functionality
-local dragging = false
-local dragInput, mousePos, framePos
+local SendGradient = create("UIGradient", {
+    Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 59, 92)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 100, 120))
+    },
+    Rotation = 45,
+    Parent = SendButton
+})
 
+-- Drag
+local dragging, dragStart, startPos = false, nil, nil
 Header.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
-        mousePos = input.Position
-        framePos = MainFrame.Position
-        
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
-end)
-
-Header.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        dragInput = input
+        dragStart = input.Position
+        startPos = MainFrame.Position
     end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        local delta = input.Position - mousePos
-        MainFrame.Position = UDim2.new(
-            framePos.X.Scale, framePos.X.Offset + delta.X,
-            framePos.Y.Scale, framePos.Y.Offset + delta.Y
-        )
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
 end)
 
--- Close button
+Header.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+-- Close
 CloseButton.MouseButton1Click:Connect(function()
-    TweenService:Create(MainFrame, TweenInfo.new(0.3), {
-        Size = UDim2.new(0, 0, 0, 0)
-    }):Play()
-    task.wait(0.3)
+    tween(CloseButton, 0.2, {Rotation = 90, BackgroundTransparency = 0.6})
+    tween(MainFrame, 0.4, {Size = UDim2.new(0, 0, 0, 0), BackgroundTransparency = 1}, Enum.EasingStyle.Back)
+    task.wait(0.4)
     ScreenGui:Destroy()
 end)
 
--- Chat History Data
+-- Chat
 local messageCount = 0
-local chatHistoryData = {}
 
--- Function to create chat message (Nhỏ hơn)
-function createChatMessage(text, isUser)
-    messageCount = messageCount + 1
-    
-    table.insert(chatHistoryData, {
-        text = text,
-        isUser = isUser,
-        timestamp = os.date("%H:%M")
+local function createTypingIndicator()
+    local typing = create("Frame", {
+        Name = "Typing",
+        Size = UDim2.new(0.35, 0, 0, 45),
+        BackgroundColor3 = Color3.fromRGB(35, 35, 45),
+        BackgroundTransparency = 0.3,
+        BorderSizePixel = 0,
+        Parent = ChatContainer
     })
+    addCorner(typing, 12)
+    addStroke(typing, 0.9, Color3.fromRGB(60, 60, 70))
     
-    local MessageFrame = Instance.new("Frame")
-    MessageFrame.Name = "Message" .. messageCount
-    MessageFrame.Size = UDim2.new(1, -8, 0, 0)
-    MessageFrame.BackgroundTransparency = 1
-    MessageFrame.LayoutOrder = messageCount
-    MessageFrame.Parent = ChatContainer
-    
-    local Bubble = Instance.new("Frame")
-    Bubble.Name = "Bubble"
-    Bubble.Size = UDim2.new(0.8, 0, 0, 0)
-    Bubble.BackgroundColor3 = isUser and Color3.fromRGB(88, 101, 242) or Color3.fromRGB(60, 60, 75)
-    Bubble.BorderSizePixel = 0
-    Bubble.Parent = MessageFrame
-    
-    if isUser then
-        Bubble.Position = UDim2.new(0.2, 0, 0, 0)
-    else
-        Bubble.Position = UDim2.new(0, 0, 0, 0)
+    for i = 1, 3 do
+        local dot = create("Frame", {
+            Size = UDim2.new(0, 9, 0, 9),
+            Position = UDim2.new(0, 18 + (i-1) * 18, 0.5, -4.5),
+            BackgroundColor3 = Color3.fromRGB(255, 59, 92),
+            BorderSizePixel = 0,
+            Parent = typing
+        })
+        addCorner(dot, 100)
+        
+        task.spawn(function()
+            while typing.Parent do
+                tween(dot, 0.6, {Position = UDim2.new(0, 18 + (i-1) * 18, 0.5, -9), BackgroundTransparency = 0.3}, Enum.EasingStyle.Sine)
+                task.wait(0.2 * i)
+                tween(dot, 0.6, {Position = UDim2.new(0, 18 + (i-1) * 18, 0.5, -4.5), BackgroundTransparency = 0}, Enum.EasingStyle.Sine)
+                task.wait(0.6)
+            end
+        end)
     end
     
-    local BubbleCorner = Instance.new("UICorner")
-    BubbleCorner.CornerRadius = UDim.new(0, 10)
-    BubbleCorner.Parent = Bubble
-    
-    local MessageText = Instance.new("TextLabel")
-    MessageText.Name = "MessageText"
-    MessageText.Size = UDim2.new(1, -16, 1, -12)
-    MessageText.Position = UDim2.new(0, 8, 0, 6)
-    MessageText.BackgroundTransparency = 1
-    MessageText.Text = text
-    MessageText.TextColor3 = Color3.fromRGB(255, 255, 255)
-    MessageText.TextSize = 12
-    MessageText.Font = Enum.Font.Gotham
-    MessageText.TextWrapped = true
-    MessageText.TextXAlignment = Enum.TextXAlignment.Left
-    MessageText.TextYAlignment = Enum.TextYAlignment.Top
-    MessageText.Parent = Bubble
-    
-    -- Calculate height
-    local textBounds = MessageText.TextBounds
-    local height = math.max(textBounds.Y + 12, 35)
-    
-    Bubble.Size = UDim2.new(0.8, 0, 0, height)
-    MessageFrame.Size = UDim2.new(1, -8, 0, height + 4)
-    
-    -- Update canvas
-    task.wait(0.05)
-    ChatContainer.CanvasSize = UDim2.new(0, 0, 0, ChatLayout.AbsoluteContentSize.Y + 16)
-    
-    -- Auto scroll to bottom
-    ChatContainer.CanvasPosition = Vector2.new(0, ChatContainer.CanvasSize.Y.Offset)
-    
-    -- Animation
-    Bubble.Size = UDim2.new(0, 0, 0, height)
-    TweenService:Create(Bubble, TweenInfo.new(0.3, Enum.EasingStyle.Back), {
-        Size = UDim2.new(0.8, 0, 0, height)
-    }):Play()
-    
-    return MessageFrame
+    return typing
 end
 
--- API Function
-function sendToLulcat(message)
+local function createChatMessage(text, isUser)
+    messageCount = messageCount + 1
+    
+    local msgFrame = create("Frame", {
+        Name = "Msg" .. messageCount,
+        Size = UDim2.new(1, -10, 0, 0),
+        BackgroundTransparency = 1,
+        LayoutOrder = messageCount,
+        Parent = ChatContainer
+    })
+    
+    local bubble = create("Frame", {
+        Size = UDim2.new(0, 0, 0, 0),
+        Position = isUser and UDim2.new(0.35, 0, 0, 0) or UDim2.new(-0.15, 0, 0, 0),
+        BackgroundColor3 = isUser and Color3.fromRGB(255, 59, 92) or Color3.fromRGB(35, 35, 45),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        Parent = msgFrame
+    })
+    addCorner(bubble, 14)
+    addStroke(bubble, isUser and 0.7 or 0.9, isUser and Color3.fromRGB(255, 100, 120) or Color3.fromRGB(60, 60, 70))
+    
+    if isUser then
+        local gradient = create("UIGradient", {
+            Color = ColorSequence.new{
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 59, 92)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 100, 120))
+            },
+            Rotation = 45,
+            Parent = bubble
+        })
+    end
+    
+    local msgText = create("TextLabel", {
+        Size = UDim2.new(1, -20, 1, -16),
+        Position = UDim2.new(0, 10, 0, 8),
+        BackgroundTransparency = 1,
+        Text = text,
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        TextSize = 13,
+        Font = Enum.Font.Gotham,
+        TextWrapped = true,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextYAlignment = Enum.TextYAlignment.Top,
+        TextTransparency = 1,
+        Parent = bubble
+    })
+    
+    local height = math.max(msgText.TextBounds.Y + 16, 40)
+    msgFrame.Size = UDim2.new(1, -10, 0, height + 6)
+    
+    task.wait(0.05)
+    ChatContainer.CanvasSize = UDim2.new(0, 0, 0, ChatLayout.AbsoluteContentSize.Y + 20)
+    tween(ChatContainer, 0.35, {CanvasPosition = Vector2.new(0, ChatContainer.CanvasSize.Y.Offset)})
+    
+    local targetPos = isUser and UDim2.new(0.25, 0, 0, 0) or UDim2.new(0, 0, 0, 0)
+    tween(bubble, 0.45, {Size = UDim2.new(0.75, 0, 0, height), Position = targetPos}, Enum.EasingStyle.Back)
+    tween(bubble, 0.35, {BackgroundTransparency = isUser and 0.15 or 0.25})
+    tween(msgText, 0.35, {TextTransparency = 0})
+    
+    return msgFrame
+end
+
+-- API
+local function sendToAI(message)
     local success, result = pcall(function()
-        local encodedMessage = HttpService:UrlEncode(message)
-        local url = "https://api.popcat.xyz/v2/lulcat?text=" .. encodedMessage
-        local response = HttpService:GetAsync(url)
+        if not HttpService.HttpEnabled then
+            return "❌ Enable HttpService in Game Settings!"
+        end
+        
+        -- Try Lulcat API
+        local url = "https://api.popcat.xyz/v2/lulcat?text=" .. HttpService:UrlEncode(message)
+        local response = HttpService:GetAsync(url, true)
         local data = HttpService:JSONDecode(response)
         
-        if data and data.error == false and data.message and data.message.text then
+        if data and not data.error and data.message and data.message.text then
             return data.message.text
-        else
-            return "⚠️ Không thể nhận phản hồi"
         end
+        
+        -- Backup: SimSimi
+        url = "https://api.simsimi.vn/v1/simtalk"
+        response = HttpService:PostAsync(url, HttpService:JSONEncode({text = message, lc = "en"}), Enum.HttpContentType.ApplicationJson)
+        data = HttpService:JSONDecode(response)
+        
+        if data and data.success and data.message then
+            return data.message
+        end
+        
+        return "🤖 Unable to connect to AI right now"
     end)
     
-    return success and result or "❌ Lỗi kết nối API"
+    return success and result or "❌ Connection error"
 end
 
--- Send Message Function
-function sendMessage()
+local function sendMessage()
     local text = InputBox.Text
-    if text == "" or text == nil then return end
+    if text == "" then return end
+    
+    -- Pulse animation
+    tween(SendButton, 0.12, {Size = UDim2.new(0, 45, 0, 33)})
+    task.wait(0.12)
+    tween(SendButton, 0.12, {Size = UDim2.new(0, 50, 0, 38)})
     
     createChatMessage(text, true)
     InputBox.Text = ""
     
-    local typingMsg = createChatMessage("💭 Đang trả lời...", false)
+    local typing = createTypingIndicator()
+    typing.LayoutOrder = messageCount + 1
     
     task.spawn(function()
-        local response = sendToLulcat(text)
+        local response = sendToAI(text)
         
-        if typingMsg and typingMsg.Parent then
-            typingMsg:Destroy()
-            messageCount = messageCount - 1
-            table.remove(chatHistoryData, #chatHistoryData)
+        if typing and typing.Parent then
+            tween(typing, 0.25, {BackgroundTransparency = 1})
+            task.wait(0.25)
+            typing:Destroy()
         end
         
         createChatMessage(response, false)
@@ -321,191 +425,34 @@ function sendMessage()
 end
 
 SendButton.MouseButton1Click:Connect(sendMessage)
+InputBox.FocusLost:Connect(function(enter) if enter then sendMessage() end end)
 
-InputBox.FocusLost:Connect(function(enterPressed)
-    if enterPressed then
-        sendMessage()
-    end
+-- Input Focus Effects
+InputBox.Focused:Connect(function()
+    tween(InputStroke, 0.3, {Transparency = 0.5, Color = Color3.fromRGB(255, 59, 92)})
+    tween(InputContainer, 0.3, {BackgroundTransparency = 0.1})
 end)
 
--- History Window (Nhỏ hơn)
-local HistoryFrame = Instance.new("Frame")
-HistoryFrame.Size = UDim2.new(0, 280, 0, 360)
-HistoryFrame.Position = UDim2.new(0.5, -140, 0.5, -180)
-HistoryFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-HistoryFrame.BorderSizePixel = 0
-HistoryFrame.Visible = false
-HistoryFrame.Parent = ScreenGui
-
-local HistoryCornerMain = Instance.new("UICorner")
-HistoryCornerMain.CornerRadius = UDim.new(0, 12)
-HistoryCornerMain.Parent = HistoryFrame
-
-local HistoryHeader = Instance.new("Frame")
-HistoryHeader.Size = UDim2.new(1, 0, 0, 35)
-HistoryHeader.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
-HistoryHeader.BorderSizePixel = 0
-HistoryHeader.Parent = HistoryFrame
-
-local HistoryHeaderCorner = Instance.new("UICorner")
-HistoryHeaderCorner.CornerRadius = UDim.new(0, 12)
-HistoryHeaderCorner.Parent = HistoryHeader
-
-local HistoryHeaderFix = Instance.new("Frame")
-HistoryHeaderFix.Size = UDim2.new(1, 0, 0, 12)
-HistoryHeaderFix.Position = UDim2.new(0, 0, 1, -12)
-HistoryHeaderFix.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
-HistoryHeaderFix.BorderSizePixel = 0
-HistoryHeaderFix.Parent = HistoryHeader
-
-local HistoryTitle = Instance.new("TextLabel")
-HistoryTitle.Size = UDim2.new(1, -40, 1, 0)
-HistoryTitle.Position = UDim2.new(0, 10, 0, 0)
-HistoryTitle.BackgroundTransparency = 1
-HistoryTitle.Text = "📜 Lịch sử"
-HistoryTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-HistoryTitle.TextSize = 15
-HistoryTitle.Font = Enum.Font.GothamBold
-HistoryTitle.TextXAlignment = Enum.TextXAlignment.Left
-HistoryTitle.Parent = HistoryHeader
-
-local CloseHistoryBtn = Instance.new("TextButton")
-CloseHistoryBtn.Size = UDim2.new(0, 26, 0, 26)
-CloseHistoryBtn.Position = UDim2.new(1, -30, 0.5, -13)
-CloseHistoryBtn.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
-CloseHistoryBtn.Text = "✕"
-CloseHistoryBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseHistoryBtn.TextSize = 15
-CloseHistoryBtn.Font = Enum.Font.GothamBold
-CloseHistoryBtn.BorderSizePixel = 0
-CloseHistoryBtn.Parent = HistoryHeader
-
-local CloseHistoryCorner = Instance.new("UICorner")
-CloseHistoryCorner.CornerRadius = UDim.new(0, 6)
-CloseHistoryCorner.Parent = CloseHistoryBtn
-
-local HistoryScroll = Instance.new("ScrollingFrame")
-HistoryScroll.Size = UDim2.new(1, -16, 1, -90)
-HistoryScroll.Position = UDim2.new(0, 8, 0, 43)
-HistoryScroll.BackgroundColor3 = Color3.fromRGB(40, 40, 52)
-HistoryScroll.BorderSizePixel = 0
-HistoryScroll.ScrollBarThickness = 4
-HistoryScroll.ScrollBarImageColor3 = Color3.fromRGB(88, 101, 242)
-HistoryScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-HistoryScroll.Parent = HistoryFrame
-
-local HistoryScrollCorner = Instance.new("UICorner")
-HistoryScrollCorner.CornerRadius = UDim.new(0, 8)
-HistoryScrollCorner.Parent = HistoryScroll
-
-local HistoryText = Instance.new("TextLabel")
-HistoryText.Size = UDim2.new(1, -16, 1, 0)
-HistoryText.Position = UDim2.new(0, 8, 0, 8)
-HistoryText.BackgroundTransparency = 1
-HistoryText.Text = "Chưa có lịch sử..."
-HistoryText.TextColor3 = Color3.fromRGB(255, 255, 255)
-HistoryText.TextSize = 12
-HistoryText.Font = Enum.Font.Gotham
-HistoryText.TextWrapped = true
-HistoryText.TextXAlignment = Enum.TextXAlignment.Left
-HistoryText.TextYAlignment = Enum.TextYAlignment.Top
-HistoryText.Parent = HistoryScroll
-
-local ClearHistoryBtn = Instance.new("TextButton")
-ClearHistoryBtn.Size = UDim2.new(1, -16, 0, 35)
-ClearHistoryBtn.Position = UDim2.new(0, 8, 1, -43)
-ClearHistoryBtn.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
-ClearHistoryBtn.Text = "🗑️ Xóa lịch sử"
-ClearHistoryBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-ClearHistoryBtn.TextSize = 13
-ClearHistoryBtn.Font = Enum.Font.GothamBold
-ClearHistoryBtn.BorderSizePixel = 0
-ClearHistoryBtn.Parent = HistoryFrame
-
-local ClearHistoryCorner = Instance.new("UICorner")
-ClearHistoryCorner.CornerRadius = UDim.new(0, 8)
-ClearHistoryCorner.Parent = ClearHistoryBtn
-
--- Update History Display
-function updateHistoryDisplay()
-    if #chatHistoryData == 0 then
-        HistoryText.Text = "Chưa có lịch sử..."
-        HistoryScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-    else
-        local historyString = ""
-        for i, msg in ipairs(chatHistoryData) do
-            local prefix = msg.isUser and "👤" or "🐱"
-            historyString = historyString .. string.format("[%s] %s: %s\n\n", msg.timestamp, prefix, msg.text)
-        end
-        HistoryText.Text = historyString
-        
-        task.wait(0.05)
-        local textHeight = HistoryText.TextBounds.Y
-        HistoryScroll.CanvasSize = UDim2.new(0, 0, 0, textHeight + 16)
-    end
-end
-
--- History Button Click
-HistoryButton.MouseButton1Click:Connect(function()
-    updateHistoryDisplay()
-    HistoryFrame.Visible = true
-    HistoryFrame.Size = UDim2.new(0, 0, 0, 0)
-    TweenService:Create(HistoryFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back), {
-        Size = UDim2.new(0, 280, 0, 360)
-    }):Play()
-end)
-
-CloseHistoryBtn.MouseButton1Click:Connect(function()
-    TweenService:Create(HistoryFrame, TweenInfo.new(0.3), {
-        Size = UDim2.new(0, 0, 0, 0)
-    }):Play()
-    task.wait(0.3)
-    HistoryFrame.Visible = false
-end)
-
-ClearHistoryBtn.MouseButton1Click:Connect(function()
-    chatHistoryData = {}
-    messageCount = 0
-    
-    for _, child in ipairs(ChatContainer:GetChildren()) do
-        if child:IsA("Frame") and child.Name:match("Message") then
-            child:Destroy()
-        end
-    end
-    
-    updateHistoryDisplay()
-    createChatMessage("✅ Đã xóa!", false)
+InputBox.FocusLost:Connect(function()
+    tween(InputStroke, 0.3, {Transparency = 0.85, Color = Color3.fromRGB(60, 60, 70)})
+    tween(InputContainer, 0.3, {BackgroundTransparency = 0.2})
 end)
 
 -- Hover Effects
-local function addHoverEffect(button, normalColor, hoverColor)
-    button.MouseEnter:Connect(function()
-        TweenService:Create(button, TweenInfo.new(0.2), {
-            BackgroundColor3 = hoverColor
-        }):Play()
-    end)
-    
-    button.MouseLeave:Connect(function()
-        TweenService:Create(button, TweenInfo.new(0.2), {
-            BackgroundColor3 = normalColor
-        }):Play()
-    end)
+local function addHover(btn, normalTrans, hoverTrans)
+    btn.MouseEnter:Connect(function() tween(btn, 0.2, {BackgroundTransparency = hoverTrans}) end)
+    btn.MouseLeave:Connect(function() tween(btn, 0.2, {BackgroundTransparency = normalTrans}) end)
 end
 
-addHoverEffect(CloseButton, Color3.fromRGB(220, 50, 50), Color3.fromRGB(255, 70, 70))
-addHoverEffect(SendButton, Color3.fromRGB(88, 101, 242), Color3.fromRGB(108, 121, 255))
-addHoverEffect(HistoryButton, Color3.fromRGB(88, 101, 242), Color3.fromRGB(108, 121, 255))
-addHoverEffect(CloseHistoryBtn, Color3.fromRGB(220, 50, 50), Color3.fromRGB(255, 70, 70))
-addHoverEffect(ClearHistoryBtn, Color3.fromRGB(220, 50, 50), Color3.fromRGB(255, 70, 70))
+addHover(CloseButton, 0.3, 0.1)
+addHover(SendButton, 0.1, 0)
 
 -- Opening Animation
 MainFrame.Size = UDim2.new(0, 0, 0, 0)
-TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back), {
-    Size = UDim2.new(0, 300, 0, 380)
-}):Play()
+MainFrame.BackgroundTransparency = 1
+tween(MainFrame, 0.5, {Size = UDim2.new(0, 320, 0, 420), BackgroundTransparency = 0.05}, Enum.EasingStyle.Back)
 
--- Welcome Message
-task.wait(0.6)
-createChatMessage("👋 Xin chào! Tôi là Lulcat 🐱", false)
+task.wait(0.7)
+createChatMessage("👋 Hi! I'm ZeroGPT. Ask me anything!", false)
 
-print("✅ Lulcat Chatbot UI (Compact) loaded!")
+print("✅ ZeroGPT UI loaded!")
